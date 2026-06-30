@@ -114,6 +114,17 @@ const DISCIPLINES = {
       { title: 'Cas pratique',           desc: 'Refais un mini-cas : calcule un BFR, une VAN ou un WACC sur des chiffres réels. La compta s\'apprend en faisant.', skills: ['Finance d\'entreprise'],  durationMin: 25 },
     ],
   },
+  lettres: {
+    id: 'lettres', name: 'Lettres & Idées', domain: 'esprit', icon: '📖', type: 'knowledge',
+    skills: ['Compréhension', 'Analyse critique', 'Culture générale', 'Argumentation'],
+    metrics: [],
+    features: { reading: true },
+    suggestions: [
+      { title: 'Lecture du jour',        desc: 'Lis le texte du jour, réponds aux questions, écris ta position en 3 lignes. La culture se construit un texte à la fois.', skills: ['Compréhension'],     durationMin: 15 },
+      { title: 'Reformuler une idée',    desc: 'Prends une idée lue cette semaine et réexplique-la à voix haute, sans jargon, comme à un ami. Si tu n\'y arrives pas, tu ne l\'as pas comprise.', skills: ['Argumentation'], durationMin: 10 },
+      { title: 'Position contraire',     desc: 'Reprends ta dernière opinion écrite et défends la thèse INVERSE pendant 5 min. C\'est comme ça qu\'on muscle un avis solide.', skills: ['Analyse critique'], durationMin: 10 },
+    ],
+  },
 };
 
 const CEFR_LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];

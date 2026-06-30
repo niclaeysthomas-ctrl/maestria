@@ -34,17 +34,32 @@
   }
   function dueCount() { return dueEntries().length; }
 
-  /* Révision : success=true -> on monte d'une boîte ; sinon retour boîte 0. */
+  /* Révision : success=true -> on monte d'une boîte ; sinon retour boîte 0.
+     XP rebasée sur la MAÎTRISE, pas l'activité :
+       - échec  -> 0 XP (on n'est pas payé pour rater),
+       - succès -> base qui croît avec la profondeur de boîte (mémoire longue = plus dur),
+       - 1ʳᵉ entrée en boîte de maîtrise (>=3) -> grosse prime unique,
+       - le tout × multiplicateur de streak (la régularité paie).
+     Renvoie { xp, mastered } pour l'affichage. */
+  const MASTERY_BOX = 3;
   function review(id, success) {
     const e = S.state.journal.find((x) => x.id === id);
-    if (!e) return;
+    if (!e) return { xp: 0, mastered: false };
+    const prevBox = e.box;
     if (success) e.box = Math.min(SRS_INTERVALS.length - 1, e.box + 1);
     else e.box = 0;
     e.nextReview = Dates.addDays(Dates.today(), SRS_INTERVALS[e.box]);
     e.history.push({ date: Dates.today(), success });
     S.state.stats.reviewsDone = (S.state.stats.reviewsDone || 0) + 1;
-    if (success) S.addXp(e.disciplineId, 6, 'review'); // save inclus
-    else S.save();
+
+    if (!success) { S.save(); return { xp: 0, mastered: false }; }
+
+    const justMastered = prevBox < MASTERY_BOX && e.box >= MASTERY_BOX;
+    const base = 3 + e.box * 3;                 // boîte 1 = 6 … boîte 6 = 21
+    const masteryBonus = justMastered ? 30 : 0;
+    const xp = Math.round((base + masteryBonus) * H.streakMultiplier());
+    S.addXp(e.disciplineId, xp, justMastered ? 'mastery' : 'review'); // save inclus
+    return { xp, mastered: justMastered };
   }
 
   /* ---------- Contenu : inscription de cartes prêtes dans le SRS ---------- */

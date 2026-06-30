@@ -251,13 +251,54 @@ ul { list-style: none; padding: 0; margin: 0; }
 .sug-arrow { color: var(--muted); font-size: 1.2rem; }
 
 .deck-actions { display: flex; gap: 8px; align-items: center; flex: none; }
+.deck-qty { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; flex: none; }
 
 /* ---- Flashcard (révision & découverte) ---- */
 .flashcard { text-align: center; padding: 26px 18px; }
 .flashcard > .muted { display: block; margin-bottom: 14px; }
-.flash-front { font-size: 2.4rem; font-weight: 700; line-height: 1.2; margin: 8px 0 18px; word-break: break-word; }
+.flash-front { font-size: 2.4rem; font-weight: 700; line-height: 1.2; margin: 8px 0 18px; word-break: break-word; position: relative; }
 .flash-back { font-size: 1.15rem; color: var(--text); border-top: 1px solid var(--line); padding-top: 16px; margin-top: 4px; }
 .flash-back.dim { color: var(--muted); font-size: .9rem; font-style: italic; }
 .flashcard.study { cursor: pointer; }
+.audio-btn { position: absolute; top: 4px; right: 0; font-size: 1.2rem; background: transparent; border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; cursor: pointer; }
+.audio-btn:hover { border-color: var(--accent); }
 .rate { display: flex; gap: 10px; }
 .rate .btn { flex: 1; }
+
+/* ---------- Lecture du jour ---------- */
+.reading { line-height: 1.62; }
+.read-title { font-size: 1.35rem; margin: 2px 0 14px; line-height: 1.25; }
+.read-p { margin: 0 0 14px; color: var(--text); font-size: 1rem; }
+.read-p:last-child { margin-bottom: 0; }
+.read-q { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 13px 14px; margin: 10px 0; }
+.read-q > p { margin: 0 0 10px; }
+.read-choices { display: flex; flex-direction: column; gap: 8px; }
+.read-choice { display: flex; align-items: flex-start; gap: 9px; background: #0e1022; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; cursor: pointer; font-size: .92rem; transition: border-color .15s; }
+.read-choice:hover { border-color: var(--accent); }
+.read-choice input { width: auto; margin: 2px 0 0; accent-color: var(--accent); }
+.read-q.ok { border-color: #1e7a47; }
+.read-q.ko { border-color: #7a2e2e; }
+.read-opts { list-style: none; padding: 0; margin: 4px 0 0; display: flex; flex-direction: column; gap: 6px; }
+.read-opts li { font-size: .9rem; color: var(--muted); padding: 7px 10px; border-radius: 8px; background: #0e1022; }
+.read-opts li.good { color: #c8ffe0; background: #14502f; border: 1px solid #1e7a47; }
+.read-opts li.bad { color: #ffd0d0; background: #4f1d1d; border: 1px solid #7a2e2e; }
+#reading-form textarea { width: 100%; box-sizing: border-box; }
+
+/* ---------- Journal ---------- */
+.mood-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.mood { cursor: pointer; }
+.mood input { display: none; }
+.mood span { display: inline-flex; align-items: center; justify-content: center; width: 42px; height: 42px; font-size: 1.3rem; background: #0e1022; border: 1px solid var(--line); border-radius: 12px; transition: border-color .15s, transform .1s; }
+.mood input:checked + span { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent) inset; transform: scale(1.05); }
+#diary-form textarea { width: 100%; box-sizing: border-box; }
+.diary-entry p { white-space: pre-wrap; margin: 6px 0 0; }
+
+/* ---------- La Cité ---------- */
+.city-scene { padding: 0; overflow: hidden; }
+.city-scene svg { display: block; }
+.cityhall-note { border-left: 4px solid #0ea5e9; font-size: .9rem; line-height: 1.5; }
+.linklike { background: none; border: none; color: var(--accent); cursor: pointer; font: inherit; padding: 0; text-decoration: underline; }
+.city-row { display: flex; align-items: center; gap: 12px; background: var(--card); border: 1px solid var(--line); border-left: 4px solid var(--c, var(--accent)); border-radius: 12px; padding: 11px 13px; margin: 8px 0; }
+.city-ic { font-size: 1.5rem; flex: none; }
+.city-info { flex: 1; display: flex; flex-direction: column; }
+.city-row .btn { flex: none; }

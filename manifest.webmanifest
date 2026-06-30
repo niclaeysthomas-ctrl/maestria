@@ -2,13 +2,13 @@
   "name": "Maestria — Tracker de maîtrise",
   "short_name": "Maestria",
   "description": "Suivi gamifié de tes disciplines : guitare, échecs, boxe, langues, maths, science.",
-  "start_url": "./index.html",
-  "scope": "./",
+  "start_url": "https://ubiquitous-baklava-31bf58.netlify.app/index.html",
+  "scope": "https://ubiquitous-baklava-31bf58.netlify.app/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#0d0e1a",
   "theme_color": "#0d0e1a",
   "icons": [
-    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+    { "src": "https://ubiquitous-baklava-31bf58.netlify.app/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
   ]
 }

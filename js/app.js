@@ -3,7 +3,7 @@
    ============================================================ */
 (function () {
   const { DOMAINS, DISCIPLINES, CEFR_LEVELS, DAILY_HABITS, NEW_CARDS_PER_DAY } = window.MAESTRIA_CONFIG;
-  const { DECKS } = window.MAESTRIA_CONTENT;
+  const { DECKS, READINGS } = window.MAESTRIA_CONTENT;
   const S = window.Store;
   const { Dates, H } = S;
 
@@ -11,8 +11,26 @@
   const nav = document.getElementById('nav');
 
   /* État de session (révision une-carte-à-la-fois & mode découverte) */
-  let reviewQueue = null, reviewIdx = 0, reviewRevealed = false;
+  let reviewQueue = null, reviewIdx = 0, reviewRevealed = false, reviewMode = 'due';  // 'due' ou 'free'
+  let reviewXpEarned = 0;  // XP réellement gagnée pendant la session de dues en cours
   let studyDeckId = null, studyIdx = 0, studyFlip = false;
+
+  /* Mélange un tableau (copie, Fisher-Yates) — pour l'entraînement libre. */
+  function shuffle(arr) {
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+    return a;
+  }
+
+  /* Audio : prononciation via Web Speech API */
+  function playAudio(text, lang = 'ar') {
+    if (!('speechSynthesis' in window)) { toast('Audio non supporté sur ce navigateur'); return; }
+    window.speechSynthesis.cancel();  // arrête l'audio précédent
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = lang;
+    utterance.rate = 0.9;  // un peu plus lent pour la clarté
+    window.speechSynthesis.speak(utterance);
+  }
 
   /* ---------- Utils ---------- */
   const esc = (s) => String(s==null?'':s).replace(/[&<>"']/g, (c) =>
@@ -122,6 +140,8 @@
     const dp = S.dailyProgress();
     const due = window.SRS.dueCount();
     const xpToday = S.xpEarnedToday();
+    const reading = readingOfToday();
+    const readDone = reading && (S.state.readingLog || []).some((x) => x.date === Dates.today() && x.readingId === reading.id);
     const profile = S.activeProfile();
     const name = profile ? profile.name.split(' ')[0] : '';
 
@@ -143,10 +163,12 @@
       return `<div class="lesson">
         <div class="lesson-info"><b>${deck.icon} ${esc(deck.name)}</b>
           <span class="muted small">${p.enrolled}/${p.total} cartes · ${disc ? esc(disc.name) : ''}</span></div>
-        <span class="deck-actions">
+        <div class="deck-qty">
           <button class="btn small" data-go="#/study/${deck.id}">Voir</button>
-          <button class="btn small primary" data-lesson="${deck.id}:${n}">+${n}</button>
-        </span>
+          <button class="btn small primary" data-lesson="${deck.id}:${Math.min(8,remaining)}">+${Math.min(8,remaining)}</button>
+          ${remaining > 8 ? `<button class="btn small" data-lesson="${deck.id}:${Math.min(15,remaining)}">+15</button>` : ''}
+          ${remaining > 15 ? `<button class="btn small" data-lesson="${deck.id}:${Math.min(20,remaining)}">+20</button>` : ''}
+        </div>
       </div>`;
     }).join('') : `<p class="muted small">Tous les decks de base sont lancés. Va dans <b>Apprendre</b> pour importer les tiens.</p>`;
 
@@ -202,6 +224,10 @@
       ${due > 0 ? `<button class="card cta" data-go="#/review">🧠 ${due} révision${due > 1 ? 's' : ''} t'attendent →</button>`
                 : `<div class="card empty small">✅ Révisions du jour faites.</div>`}
 
+      ${reading ? `<button class="card cta" data-go="#/read">${reading.icon} Lecture du jour · <span class="muted small">${esc(reading.theme)}</span><br>${esc(reading.title)} ${readDone ? '<span class="badge">✓ lu</span>' : '→'}</button>` : ''}
+
+      <button class="card cta" data-go="#/city">🏰 Ta Cité ${S.City.pierresAvailable() > 0 ? `· <span class="badge">${S.City.pierresAvailable()} 🪨 à dépenser</span>` : `<span class="muted small">· monte de niveau pour bâtir</span>`} →</button>
+
       <h2 class="section">📖 Leçon du jour</h2>
       <div class="card lessons">${lessonsHTML}</div>
 
@@ -233,11 +259,12 @@
           <div class="xpbar slim"><div class="xpbar-fill" style="width:${pct}%;background:${dom.color}"></div></div>
           <div class="deck-foot">
             <span class="muted small">${p.enrolled}/${p.total} lancées · ${p.mastered} maîtrisées</span>
-            <span class="deck-actions">
+            ${remaining > 0 ? `<div class="deck-qty">
               <button class="btn small" data-go="#/study/${deck.id}">Découvrir</button>
-              ${remaining > 0 ? `<button class="btn small primary" data-lesson="${deck.id}:${n}">+${n}</button>`
-                              : `<span class="badge">✓ complet</span>`}
-            </span>
+              <button class="btn small primary" data-lesson="${deck.id}:${Math.min(8,remaining)}">+${Math.min(8,remaining)}</button>
+              ${remaining > 8 ? `<button class="btn small" data-lesson="${deck.id}:${Math.min(15,remaining)}">+15</button>` : ''}
+              ${remaining > 15 ? `<button class="btn small" data-lesson="${deck.id}:${Math.min(20,remaining)}">+20</button>` : ''}
+            </div>` : `<span class="badge">✓ complet</span>`}
           </div></div>`;
       }).join('');
       return `<h2 class="section">${c.icon} ${esc(c.name)}</h2>${cards}`;
@@ -247,6 +274,7 @@
       <header class="dhead"><button class="back" data-go="#/">‹</button>
         <div class="dhead-main"><span class="dicon big">📖</span>
         <div><h1>Apprendre</h1><span class="muted small">Decks de cartes · façon Anki</span></div></div></header>
+      ${S.state.journal.length > 0 ? `<button class="card cta" data-go="#/review/free">🎯 Entraînement libre — réviser sans pression, quand je veux</button>` : ''}
       ${blocks}
       <h2 class="section">➕ Importer mes cartes</h2>
       <div class="card">
@@ -442,14 +470,232 @@
   }
 
   /* ======================================================
+     LECTURE DU JOUR (corpus de textes + compréhension)
+     ====================================================== */
+  function readingOfToday() {
+    if (!READINGS || !READINGS.length) return null;
+    const dayIdx = Number(Dates.today().replace(/-/g, ''));
+    return READINGS[dayIdx % READINGS.length];
+  }
+
+  function viewReading() {
+    nav.hidden = false;
+    const r = readingOfToday();
+    if (!r) { app.innerHTML = `<div class="card empty">Aucun texte disponible.</div>`; return; }
+    const done = (S.state.readingLog || []).find((x) => x.date === Dates.today() && x.readingId === r.id);
+
+    const head = `
+      <header class="dhead"><button class="back" data-go="#/">‹</button>
+        <div class="dhead-main"><span class="dicon big">${r.icon}</span>
+          <div><h1>Lecture du jour</h1><span class="muted small">${esc(r.theme)} · ${esc(r.source)}</span></div></div></header>
+      <article class="card reading">
+        <h2 class="read-title">${esc(r.title)}</h2>
+        ${r.body.map((p) => `<p class="read-p">${esc(p)}</p>`).join('')}
+      </article>`;
+
+    if (done) {
+      const qHTML = r.questions.map((q, i) => {
+        const chosen = done.answers[i], ok = chosen === q.answer;
+        const opts = q.choices.map((c, j) =>
+          `<li class="${j === q.answer ? 'good' : (j === chosen ? 'bad' : '')}">${j === q.answer ? '✓' : (j === chosen ? '✗' : '·')} ${esc(c)}</li>`).join('');
+        return `<div class="read-q ${ok ? 'ok' : 'ko'}"><p><b>${esc(q.q)}</b></p><ul class="read-opts">${opts}</ul></div>`;
+      }).join('');
+      app.innerHTML = `${head}
+        <div class="card empty small">✅ Lu aujourd'hui · <b>${done.correct}/${done.total}</b> bonnes réponses${done.xp ? ` · +${done.xp} XP` : ''}</div>
+        ${qHTML}
+        ${done.opinion ? `<h2 class="section">📝 Ta position</h2><div class="card"><p>${esc(done.opinion)}</p></div>` : ''}
+        <button class="btn block" data-go="#/read/opinions">📚 Mon journal d'opinions →</button>
+        <button class="card cta" data-go="#/">‹ Retour à Aujourd'hui</button>`;
+      return;
+    }
+
+    const qFormHTML = r.questions.map((q, i) => `
+      <div class="read-q">
+        <p><b>${i + 1}. ${esc(q.q)}</b></p>
+        <div class="read-choices">
+          ${q.choices.map((c, j) => `<label class="read-choice"><input type="radio" name="q${i}" value="${j}"> <span>${esc(c)}</span></label>`).join('')}
+        </div>
+      </div>`).join('');
+    app.innerHTML = `${head}
+      <form id="reading-form">
+        <h2 class="section">🧐 As-tu bien lu ?</h2>
+        ${qFormHTML}
+        <h2 class="section">📝 Ta position</h2>
+        <div class="card">
+          <p class="muted small">${esc(r.reflection)}</p>
+          <textarea name="opinion" rows="4" placeholder="Écris ta position en quelques lignes…"></textarea>
+        </div>
+        <button class="btn primary block" type="submit">Valider ma lecture</button>
+      </form>`;
+  }
+
+  function viewOpinions() {
+    nav.hidden = false;
+    const ops = (S.state.opinions || []).slice().reverse();
+    const list = ops.length ? ops.map((o) => `
+      <div class="card">
+        <div class="muted small">${esc(Dates.label(o.date))} · ${esc(o.theme)}</div>
+        <b>${esc(o.title)}</b><p>${esc(o.text)}</p>
+      </div>`).join('') : `<div class="card empty">Pas encore d'opinion écrite. Lis le texte du jour et prends position.</div>`;
+    app.innerHTML = `
+      <header class="dhead"><button class="back" data-go="#/read">‹</button>
+        <div class="dhead-main"><span class="dicon big">📚</span>
+          <div><h1>Journal d'opinions</h1><span class="muted small">Tes positions, une lecture à la fois</span></div></div></header>
+      ${list}`;
+  }
+
+  /* ======================================================
+     LA CITÉ (village gamifié — scène SVG)
+     ====================================================== */
+  const BUILDING_NAMES = { corps:'Le Dojo', art:'La Scène', esprit:'La Grande Bibliothèque', langues:'La Tour des Langues' };
+  const BUILDING_EMBLEM = { corps:'🥊', art:'🎶', esprit:'📚', langues:'🗣️', pro:'🏛️' };
+
+  /* Dessine un bâtiment en élévation, dont la hauteur/les détails croissent avec le palier. */
+  function drawBuilding(type, cx, gy, tier, color) {
+    if (tier <= 0) {
+      return `<g opacity="0.55"><rect x="${cx-22}" y="${gy-24}" width="44" height="24" fill="none" stroke="${color}" stroke-width="1.5" stroke-dasharray="4 3"/>`
+        + `<text x="${cx}" y="${gy-8}" font-size="14" text-anchor="middle">🚧</text></g>`;
+    }
+    const floors = Math.min(tier, 4), h = 22 + floors * 13, w = 46, x = cx - w/2, ty = gy - h;
+    const flag = (y) => `<line x1="${cx}" y1="${y}" x2="${cx}" y2="${y-13}" stroke="#cbd5ff" stroke-width="1.5"/><path d="M${cx} ${y-13} l12 4 l-12 4 z" fill="${color}"/>`;
+    let s = `<rect x="${x}" y="${ty}" width="${w}" height="${h}" rx="3" fill="#10122a" stroke="${color}" stroke-width="2"/>`;
+    for (let f = 0; f < floors; f++) {
+      const wy = gy - (f+1)*13 + 3;
+      s += `<rect x="${cx-10}" y="${wy}" width="7" height="8" rx="1.5" fill="#ffd16b"/><rect x="${cx+3}" y="${wy}" width="7" height="8" rx="1.5" fill="#ffd16b"/>`;
+    }
+    if (type === 'corps') {
+      s += `<path d="M${cx-w/2-6} ${ty} Q${cx} ${ty-15} ${cx+w/2+6} ${ty} Z" fill="${color}"/>`;
+      s += `<path d="M${cx-w/2-1} ${ty-11} Q${cx} ${ty-23} ${cx+w/2+1} ${ty-11} Z" fill="${color}" opacity="0.85"/>`;
+    } else if (type === 'art') {
+      s += `<path d="M${x} ${ty} A ${w/2} ${w/2} 0 0 1 ${cx+w/2} ${ty} Z" fill="${color}"/>`;
+    } else if (type === 'esprit') {
+      s += `<rect x="${x-4}" y="${ty}" width="${w+8}" height="4" fill="${color}"/>`;
+      s += `<polygon points="${x-4},${ty} ${cx},${ty-16} ${cx+w/2+4},${ty}" fill="${color}"/>`;
+    } else if (type === 'langues') {
+      s += `<polygon points="${x},${ty} ${cx},${ty-22} ${cx+w/2},${ty}" fill="${color}"/>` + flag(ty-22);
+    } else { /* pro : Hôtel de ville — créneaux + horloge */
+      s += `<rect x="${x-2}" y="${ty-8}" width="${w+4}" height="8" fill="${color}"/>`;
+      for (let i = 0; i < 4; i++) s += `<rect x="${x-2 + i*((w+4)/4)}" y="${ty-14}" width="6" height="6" fill="${color}"/>`;
+      s += `<circle cx="${cx}" cy="${gy-h/2}" r="7" fill="#0d0e1a" stroke="${color}" stroke-width="2"/>`
+        + `<line x1="${cx}" y1="${gy-h/2}" x2="${cx}" y2="${gy-h/2-5}" stroke="${color}" stroke-width="1.5"/>`
+        + `<line x1="${cx}" y1="${gy-h/2}" x2="${cx+4}" y2="${gy-h/2}" stroke="${color}" stroke-width="1.5"/>`;
+    }
+    if (tier >= 3 && type !== 'langues' && type !== 'pro') s += flag(ty-2);
+    s += `<text x="${cx}" y="${gy-6}" font-size="13" text-anchor="middle">${BUILDING_EMBLEM[type]}</text>`;
+    return s;
+  }
+
+  function citySceneSVG() {
+    const T = (d) => S.City.buildingTier(d), gy = 212, th = S.City.townHallTier();
+    let stars = '';
+    for (let i = 0; i < 30; i++) { const sx = (i*53 % 372) + 4, sy = (i*29 % 92) + 8, r = (i % 3 === 0 ? 1.3 : 0.8); stars += `<circle cx="${sx}" cy="${sy}" r="${r}" fill="#9fb0ff" opacity="${0.25 + (i % 5)*0.12}"/>`; }
+    return `<svg viewBox="0 0 380 250" width="100%" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Ta Cité">
+      <defs>
+        <linearGradient id="csky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1b1f44"/><stop offset="1" stop-color="#0d0e1a"/></linearGradient>
+        <linearGradient id="cgnd" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#21264d"/><stop offset="1" stop-color="#161a36"/></linearGradient>
+      </defs>
+      <rect x="0" y="0" width="380" height="250" fill="url(#csky)"/>
+      ${stars}
+      <circle cx="322" cy="42" r="17" fill="#f1f3ff" opacity="0.92"/><circle cx="315" cy="38" r="17" fill="url(#csky)"/>
+      <rect x="0" y="206" width="380" height="44" fill="url(#cgnd)"/>
+      <ellipse cx="190" cy="208" rx="205" ry="13" fill="#272c57" opacity="0.6"/>
+      ${drawBuilding('corps', 48, gy, T('corps'), DOMAINS.corps.color)}
+      ${drawBuilding('art', 112, gy, T('art'), DOMAINS.art.color)}
+      ${drawBuilding('pro', 190, gy, th, DOMAINS.pro.color)}
+      ${drawBuilding('esprit', 268, gy, T('esprit'), DOMAINS.esprit.color)}
+      ${drawBuilding('langues', 332, gy, T('langues'), DOMAINS.langues.color)}
+    </svg>`;
+  }
+
+  function viewCity() {
+    nav.hidden = false;
+    const avail = S.City.pierresAvailable(), th = S.City.townHallTier(), max = S.City.stepsMax;
+    const rows = S.City.domains.map((d) => {
+      const c = DOMAINS[d], tier = S.City.buildingTier(d), can = S.City.canUpgrade(d);
+      let action;
+      if (can.ok) action = `<button class="btn small primary" data-build="${d}">Améliorer · ${can.cost} 🪨</button>`;
+      else if (can.reason === 'pierres') action = `<span class="muted small">Manque ${can.cost - avail} 🪨</span>`;
+      else if (can.reason === 'stage') action = `<span class="muted small">🔒 Avance le stage</span>`;
+      else action = `<span class="muted small">🔒 Pratique ${esc(c.name)}</span>`;
+      return `<div class="city-row" style="--c:${c.color}">
+        <span class="city-ic">${BUILDING_EMBLEM[d]}</span>
+        <div class="city-info"><b>${BUILDING_NAMES[d]}</b><span class="muted small">${esc(c.name)} · niveau ${tier}</span></div>
+        ${action}</div>`;
+    }).join('');
+    app.innerHTML = `
+      <header class="dhead"><button class="back" data-go="#/">‹</button>
+        <div class="dhead-main"><span class="dicon big">🏰</span>
+          <div><h1>Ta Cité</h1><span class="muted small">${avail} 🪨 à dépenser · Hôtel de ville ${th}/${max}</span></div></div></header>
+      <div class="card city-scene">${citySceneSVG()}</div>
+      <div class="card cityhall-note">🏛️ <b>Hôtel de ville niveau ${th}</b> — il plafonne toute la Cité et ne monte qu'avec <b>les étapes de ton stage</b> (${th}/${max}). ${th < max ? `<button class="linklike" data-go="#/">Avance le boss →</button>` : 'Niveau max. Respect.'}</div>
+      <h2 class="section">🏗️ Bâtiments</h2>
+      ${rows}
+      <p class="muted small">Tu gagnes des 🪨 en montant de niveau global. Un bâtiment monte si tu as les Pierres, que le domaine est assez haut, et que l'Hôtel de ville (ton stage) le permet.</p>`;
+  }
+
+  /* ======================================================
+     JOURNAL (entrées quotidiennes + bilan)
+     ====================================================== */
+  const MOODS = ['😄', '🙂', '😐', '😕', '😞', '🔥', '😤', '😴'];
+
+  function viewDiary() {
+    nav.hidden = false;
+    const today = Dates.today();
+    const diary = S.state.diary || [];
+    const todayEntry = diary.find((d) => d.date === today);
+    const past = diary.filter((d) => d.date !== today).slice().sort((a, b) => b.date.localeCompare(a.date));
+    const written = diary.length;
+
+    app.innerHTML = `
+      <header class="dhead"><button class="back" data-go="#/">‹</button>
+        <div class="dhead-main"><span class="dicon big">📔</span>
+          <div><h1>Journal</h1><span class="muted small">${written} entrée${written > 1 ? 's' : ''} · une par jour</span></div></div></header>
+      <button class="btn block" data-go="#/diary/bilan">📅 Bilan des 14 derniers jours →</button>
+      <form id="diary-form" class="stack">
+        <h2 class="section">${todayEntry ? 'Modifier' : 'Aujourd\'hui'} · ${esc(Dates.label(today))}</h2>
+        <div class="mood-row">
+          ${MOODS.map((m) => `<label class="mood"><input type="radio" name="mood" value="${m}" ${todayEntry && todayEntry.mood === m ? 'checked' : ''}><span>${m}</span></label>`).join('')}
+        </div>
+        <textarea name="text" rows="6" placeholder="Comment s'est passée ta journée ? Une victoire, une idée pour plus tard, un truc à retenir…">${todayEntry ? esc(todayEntry.text) : ''}</textarea>
+        <button class="btn primary block" type="submit">${todayEntry ? 'Mettre à jour' : 'Enregistrer ma journée'}</button>
+      </form>
+      <h2 class="section">Entrées précédentes</h2>
+      ${past.length ? past.map((d) => `<div class="card diary-entry"><div class="muted small">${esc(Dates.label(d.date))} ${d.mood || ''}</div><p>${esc(d.text)}</p></div>`).join('') : `<div class="card empty">Rien encore. Commence par aujourd'hui.</div>`}`;
+  }
+
+  function viewBilan() {
+    nav.hidden = false;
+    const since = Dates.addDays(Dates.today(), -13);
+    const entries = (S.state.diary || []).filter((d) => d.date >= since).sort((a, b) => a.date.localeCompare(b.date));
+    const block = entries.length
+      ? entries.map((d) => `<div class="card diary-entry"><div class="muted small">${esc(Dates.label(d.date))} ${d.mood || ''}</div><p>${esc(d.text)}</p></div>`).join('')
+      : `<div class="card empty">Aucune entrée sur les 14 derniers jours.</div>`;
+    app.innerHTML = `
+      <header class="dhead"><button class="back" data-go="#/diary">‹</button>
+        <div class="dhead-main"><span class="dicon big">📅</span>
+          <div><h1>Bilan · 14 jours</h1><span class="muted small">${entries.length}/14 jours écrits</span></div></div></header>
+      <div class="card">Relis d'un bloc, repère les motifs et les idées récurrentes.${entries.length ? ` Pour une <b>vraie synthèse</b>, copie-colle-moi ce bilan en conversation — je n'ai pas accès à tes données locales.` : ''}</div>
+      ${block}`;
+  }
+
+  /* ======================================================
      RÉVISIONS
      ====================================================== */
-  function viewReview() {
+  function viewReview(mode) {
     nav.hidden = false;
 
-    /* (Re)démarre une session si besoin : on fige la file des cartes dues. */
-    if (reviewQueue === null) {
-      reviewQueue = window.SRS.dueEntries().map((e) => e.id);
+    /* (Re)démarre une session si besoin. mode 'free' = entraînement libre sur tout le journal.
+       startFree force la bascule en libre même si une file 'due' (souvent vide) traîne. */
+    const startFree = mode === 'free' && reviewMode !== 'free';
+    if (reviewQueue === null || startFree) {
+      if (mode === 'free') {
+        reviewMode = 'free';
+        reviewQueue = shuffle(S.state.journal.map((e) => e.id));
+      } else {
+        reviewMode = 'due';
+        reviewQueue = window.SRS.dueEntries().map((e) => e.id);
+        reviewXpEarned = 0;
+      }
       reviewIdx = 0; reviewRevealed = false;
     }
     const total = reviewQueue.length;
@@ -462,19 +708,43 @@
           <div class="dhead-main"><span class="dicon big">🧠</span><div><h1>Révisions</h1></div></div></header>
         <div class="card empty">✅ Rien à réviser pour l'instant.<br>
           <span class="muted small">${upcoming} carte(s) au total, programmées plus tard.</span></div>
+        ${upcoming > 0 ? `<button class="card cta" data-go="#/review/free">🎯 Entraînement libre (réviser sans pression) →</button>` : ''}
         <button class="card cta" data-go="#/learn">📖 Démarrer une nouvelle leçon →</button>
         <button class="btn block" id="ics-btn">📅 Exporter les rappels (.ics) vers mon agenda</button>`;
       return;
     }
 
-    /* Session terminée */
-    if (reviewIdx >= total) {
-      reviewQueue = null;  // prochaine entrée = nouvelle session
+    /* Session terminée (dues) */
+    if (reviewIdx >= total && reviewMode === 'due') {
+      const nonDue = S.state.journal.filter((e) => !e.nextReview || e.nextReview > Dates.today());
+      if (nonDue.length > 0) {
+        app.innerHTML = `
+          <header class="dhead"><button class="back" data-go="#/">‹</button>
+            <div class="dhead-main"><span class="dicon big">🎉</span><div><h1>Dues terminées</h1></div></div></header>
+          <div class="card empty">Bravo. <b>${total} carte${total>1?'s':''}</b> révisée${total>1?'s':''}.<br>
+            <span class="muted small">+${reviewXpEarned} XP gagnés${H.currentStreak()>1?` · streak ×${H.streakMultiplier().toFixed(2)}`:''} · ${nonDue.length} autres cartes en entraînement libre.</span></div>
+          <button class="card cta" id="continue-free">🎯 Continuer en entraînement libre →</button>
+          <button class="card cta" data-go="#/">‹ Retour à Aujourd'hui</button>`;
+        return;
+      }
+      reviewQueue = null;
       app.innerHTML = `
         <header class="dhead"><button class="back" data-go="#/">‹</button>
           <div class="dhead-main"><span class="dicon big">🎉</span><div><h1>Session terminée</h1></div></div></header>
-        <div class="card empty">Bravo. <b>${total} carte${total>1?'s':''}</b> révisée${total>1?'s':''}.<br>
-          <span class="muted small">+${total*6} XP environ · reviens demain pour les suivantes.</span></div>
+        <div class="card empty">Perfection. Zéro carte à réviser.<br>
+          <span class="muted small">Reviens demain ou ajoute plus de leçons.</span></div>
+        <button class="card cta" data-go="#/">‹ Retour à Aujourd'hui</button>`;
+      return;
+    }
+
+    /* Session libre (après les dues) */
+    if (reviewIdx >= total && reviewMode === 'free') {
+      reviewQueue = null; reviewMode = 'due';
+      app.innerHTML = `
+        <header class="dhead"><button class="back" data-go="#/">‹</button>
+          <div class="dhead-main"><span class="dicon big">💪</span><div><h1>Entraînement libre terminé</h1></div></div></header>
+        <div class="card empty">Bien joué. Tu as révisé en mode libre.<br>
+          <span class="muted small">Le SRS ne s'est pas mis à jour, c'était juste pour t'entraîner.</span></div>
         <button class="card cta" data-go="#/">‹ Retour à Aujourd'hui</button>`;
       return;
     }
@@ -483,6 +753,8 @@
     const e = S.state.journal.find((x) => x.id === reviewQueue[reviewIdx]);
     if (!e) { reviewIdx++; render(); return; }
     const cfg = DISCIPLINES[e.disciplineId];
+    const deck = DECKS[e.deckId];
+    const hasAudio = deck && deck.lang;
     const progress = Math.round((reviewIdx / total) * 100);
 
     app.innerHTML = `
@@ -494,7 +766,7 @@
 
       <div class="card flashcard">
         <span class="muted small">${cfg.icon} ${esc(cfg.name)} · boîte ${e.box}</span>
-        <div class="flash-front">${esc(e.title)}</div>
+        <div class="flash-front">${esc(e.title)}${hasAudio ? `<button class="btn audio-btn" data-audio="${esc(e.title)}">🔊</button>` : ''}</div>
         ${reviewRevealed
           ? `<div class="flash-back">${esc(e.note) || '<i>(pas de détail noté)</i>'}</div>`
           : `<button class="btn primary block" data-reveal>Afficher la réponse</button>`}
@@ -505,7 +777,7 @@
           <button class="btn bad block" data-rate="0">Pas su ✗</button>
           <button class="btn good block" data-rate="1">Su ✓</button>
         </div>
-        <p class="muted small center">« Su » espace la carte · « Pas su » la fait revenir vite.</p>` : ''}
+        <p class="muted small center">${reviewMode === 'free' ? '🎯 Entraînement libre — SRS ne change pas' : `« Su » espace la carte · « Pas su » la fait revenir vite.${H.currentStreak()>1?` · 🔥 streak ×${H.streakMultiplier().toFixed(2)}`:''}`}</p>` : ''}
     `;
   }
 
@@ -545,7 +817,7 @@
       <div class="xpbar slim"><div class="xpbar-fill" style="width:${progress}%;background:${dom.color}"></div></div>
 
       <button class="card flashcard study" data-study-flip>
-        <div class="flash-front">${esc(c.front)}</div>
+        <div class="flash-front">${esc(c.front)}${deck.lang ? `<button class="btn audio-btn" data-audio="${esc(c.front)}">🔊</button>` : ''}</div>
         <div class="flash-back ${studyFlip ? '' : 'dim'}">${studyFlip ? esc(c.back) : 'Touche pour retourner'}</div>
       </button>
 
@@ -643,9 +915,12 @@
     if (root==='')          viewToday();
     else if (root==='map')  viewDashboard();
     else if (root==='learn') viewLearn();
+    else if (root==='read')  { if (parts[1]==='opinions') viewOpinions(); else viewReading(); }
+    else if (root==='diary') { if (parts[1]==='bilan') viewBilan(); else viewDiary(); }
+    else if (root==='city')  viewCity();
     else if (root==='study') viewStudy(parts[1]);
     else if (root==='d')    viewDiscipline(parts[1]);
-    else if (root==='review') viewReview();
+    else if (root==='review') viewReview(parts[1]);
     else if (root==='tools')  viewTools();
     else if (root==='settings') viewSettings();
     else viewToday();
@@ -693,6 +968,12 @@
     const qstep=e.target.closest('[data-qstep]');
     if (qstep) { const [qid,sid]=qstep.dataset.qstep.split(':'); const res=S.toggleQuestStep(qid,sid); afterMutation(res); render(); return; }
 
+    /* Cité : améliorer un bâtiment (dépenser des Pierres) */
+    const build=e.target.closest('[data-build]');
+    if (build) { const r=S.City.upgradeBuilding(build.dataset.build);
+      if (r.ok) { afterMutation(); toast(`🏗️ ${BUILDING_NAMES[build.dataset.build]} niveau ${r.tier} !`); }
+      render(); return; }
+
     /* Démarrer une leçon : inscrire des cartes dans le SRS */
     const lesson=e.target.closest('[data-lesson]');
     if (lesson) { const [deckId,n]=lesson.dataset.lesson.split(':'); const added=window.SRS.enrollNext(deckId,Number(n));
@@ -717,13 +998,30 @@
     const sg=e.target.closest('[data-suggest]');
     if (sg) { const [discId,idx]=sg.dataset.suggest.split(':'); applySuggestion(discId,Number(idx)); return; }
 
+    /* Audio : prononcer la carte */
+    const audioBtn=e.target.closest('[data-audio]');
+    if (audioBtn) { playAudio(audioBtn.dataset.audio); e.stopPropagation(); return; }
+
     /* Révision : révéler la réponse */
     if (e.target.closest('[data-reveal]')) { reviewRevealed = true; render(); return; }
+    /* Continuer en entraînement libre */
+    if (e.target.closest('#continue-free')) {
+      reviewQueue = S.state.journal.filter((e) => !e.nextReview || e.nextReview > Dates.today()).map((e) => e.id);
+      reviewMode = 'free'; reviewIdx = 0; reviewRevealed = false; render(); return;
+    }
+
     /* Révision : noter la carte (0 = pas su, 1 = su) puis carte suivante */
     const rate=e.target.closest('[data-rate]');
     if (rate) {
-      const id=reviewQueue[reviewIdx]; window.SRS.review(id, rate.dataset.rate==='1');
-      reviewIdx++; reviewRevealed=false; afterMutation(); render(); return;
+      const id=reviewQueue[reviewIdx];
+      if (reviewMode === 'due') {
+        const r = window.SRS.review(id, rate.dataset.rate==='1');
+        reviewXpEarned += r.xp;
+        if (r.mastered) toast(`🏆 Carte maîtrisée ! +${r.xp} XP`);
+        afterMutation();
+      }
+      // En mode free, on ne met pas à jour le SRS
+      reviewIdx++; reviewRevealed=false; render(); return;
     }
 
     /* Mode Découvrir : retourner / naviguer */
@@ -797,6 +1095,33 @@
       const fd=new FormData(e.target);
       window.SRS.addEntry(id,fd.get('title'),fd.get('note')); afterMutation(); toast('Connaissance ajoutée. Révisions programmées.'); render(); return;
     }
+    if (e.target.id==='reading-form') {
+      const r=readingOfToday(); if(!r) return;
+      const fd=new FormData(e.target);
+      const answers=r.questions.map((q,i)=>{ const v=fd.get('q'+i); return v==null?-1:Number(v); });
+      const correct=answers.reduce((a,ans,i)=>a+(ans===r.questions[i].answer?1:0),0);
+      const total=r.questions.length;
+      const opinion=(fd.get('opinion')||'').trim();
+      const xp=Math.round((8 + correct*4 + (opinion.length>=30?6:0)) * H.streakMultiplier());
+      S.state.readingLog=S.state.readingLog||[]; S.state.opinions=S.state.opinions||[];
+      S.state.readingLog.push({ date:Dates.today(), readingId:r.id, answers, correct, total, opinion, xp });
+      if (opinion) S.state.opinions.push({ date:Dates.today(), readingId:r.id, theme:r.theme, title:r.title, text:opinion });
+      S.addXp(r.disciplineId||'lettres', xp, 'reading'); // save inclus
+      afterMutation(); toast(`Lecture validée · ${correct}/${total} · +${xp} XP`); render(); return;
+    }
+    if (e.target.id==='diary-form') {
+      const fd=new FormData(e.target);
+      const text=(fd.get('text')||'').trim(), mood=fd.get('mood')||'';
+      if (!text && !mood) { render(); return; }
+      const today=Dates.today();
+      S.state.diary=S.state.diary||[];
+      const existing=S.state.diary.find((d)=>d.date===today), firstToday=!existing;
+      if (existing) { existing.text=text; existing.mood=mood; }
+      else S.state.diary.push({ date:today, mood, text });
+      if (firstToday && text.length>=20) { S.addXp('lettres', Math.round(10*H.streakMultiplier()), 'diary'); } // save inclus
+      else S.save();
+      afterMutation(); toast(firstToday?'Journée enregistrée.':'Journal mis à jour.'); render(); return;
+    }
   });
 
   document.addEventListener('change', (e) => {
@@ -842,6 +1167,7 @@
     <button data-go="#/learn" data-root="learn"><span>📖</span>Apprendre</button>
     <button data-go="#/review" data-root="review"><span>🧠</span>Réviser</button>
     <button data-go="#/map" data-root="map"><span>📊</span>Progrès</button>
+    <button data-go="#/diary" data-root="diary"><span>📔</span>Journal</button>
     <button data-go="#/settings" data-root="settings"><span>⚙️</span>Réglages</button>`;
 
   S.refreshBadges();

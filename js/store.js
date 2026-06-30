@@ -80,7 +80,8 @@
     return { version:2, createdAt:new Date().toISOString(),
       settings:{ name:'', coach:'adaptatif', startDate:Dates.today() },
       disciplines, journal:[], badges:[], log:[], stats:{ reviewsDone:0 },
-      daily:{}, quests:defaultQuests() };
+      daily:{}, quests:defaultQuests(), readingLog:[], opinions:[], diary:[],
+      city:{ buildings:{} } };
   }
 
   /* ---------- Persistance ---------- */
@@ -97,6 +98,11 @@
       if (!s.quests) s.quests = defaultQuests();
       if (!s.settings) s.settings = { name:'', coach:'adaptatif' };
       if (!s.settings.startDate) s.settings.startDate = s.createdAt ? Dates.toKey(s.createdAt) : Dates.today();
+      if (!s.readingLog) s.readingLog = [];
+      if (!s.opinions) s.opinions = [];
+      if (!s.diary) s.diary = [];
+      if (!s.city) s.city = { buildings:{} };
+      if (!s.city.buildings) s.city.buildings = {};
       return s;
     } catch { return freshState(); }
   }
@@ -152,6 +158,8 @@
       while (days.has(cursor)) { streak++; cursor = Dates.addDays(cursor, -1); }
       return streak;
     },
+    /* La régularité est le levier principal : +3 %/jour d'affilée, plafonné à ×1.9 (30 j). */
+    streakMultiplier(s=state) { return 1 + Math.min(H.currentStreak(s), 30) * 0.03; },
     longestStreak(s=state) {
       const days = [...H.activeDates(s)].sort();
       let best=0, run=0, prev=null;
@@ -322,6 +330,41 @@
   }
   function reset() { state=freshState(); save(); }
 
+  /* ---------- Cité (village gamifié) ----------
+     Pierres = monnaie DÉRIVÉE du niveau global (pas d'événement à rater).
+     Un bâtiment de domaine monte si : assez de Pierres + domaine assez haut + Hôtel de ville (stage) assez haut.
+     L'Hôtel de ville (Métier) = nb d'étapes du boss stage franchies → il plafonne toute la Cité. */
+  const CITY_DOMAINS = ['corps', 'art', 'esprit', 'langues'];
+  const STAGE_STEPS_MAX = 5;
+  function cityState() { if (!state.city) state.city = { buildings:{} }; if (!state.city.buildings) state.city.buildings = {}; return state.city; }
+  function buildingTier(domainId) { return cityState().buildings[domainId] || 0; }
+  function townHallTier() {
+    const q = (state.quests || []).find((x) => x.id === 'q_stage') || (state.quests || [])[0];
+    return q ? Math.min(STAGE_STEPS_MAX, q.steps.filter((s) => s.done).length) : 0;
+  }
+  function tierCost(t) { return 3 * t; }                       // coût pour atteindre le palier t
+  function cumCost(t) { let c = 0; for (let k = 1; k <= t; k++) c += tierCost(k); return c; }
+  function pierresEarned() { const L = H.globalLevel(); return L > 1 ? (L * (L + 1) / 2 - 1) : 0; }
+  function pierresSpent() { return CITY_DOMAINS.reduce((a, d) => a + cumCost(buildingTier(d)), 0); }
+  function pierresAvailable() { return pierresEarned() - pierresSpent(); }
+  function buildingMaxTier(domainId) { return Math.min(H.domainLevel(domainId), townHallTier() + 1); }
+  function canUpgrade(domainId) {
+    const next = buildingTier(domainId) + 1, cost = tierCost(next);
+    if (next > townHallTier() + 1) return { ok:false, reason:'stage', cost };
+    if (next > H.domainLevel(domainId)) return { ok:false, reason:'domaine', cost };
+    if (pierresAvailable() < cost) return { ok:false, reason:'pierres', cost };
+    return { ok:true, cost };
+  }
+  function upgradeBuilding(domainId) {
+    const c = canUpgrade(domainId);
+    if (!c.ok) return c;
+    cityState().buildings[domainId] = buildingTier(domainId) + 1;
+    save();
+    return { ok:true, tier: buildingTier(domainId), cost: c.cost };
+  }
+  const City = { domains:CITY_DOMAINS, stepsMax:STAGE_STEPS_MAX, buildingTier, townHallTier,
+    buildingMaxTier, tierCost, pierresEarned, pierresSpent, pierresAvailable, canUpgrade, upgradeBuilding };
+
   window.Store = {
     get state() { return state; },
     Dates, H,
@@ -331,6 +374,7 @@
     questProgress, toggleQuestStep,
     addSession, addXp, setCefr, addGoal, toggleGoal, removeGoal,
     refreshBadges, save, reset,
+    City,
     exportJSON, importJSON,
     /* Profils */
     getProfiles, createProfile, deleteProfile, switchProfile,
