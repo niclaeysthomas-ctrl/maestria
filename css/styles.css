@@ -302,3 +302,32 @@ ul { list-style: none; padding: 0; margin: 0; }
 .city-ic { font-size: 1.5rem; flex: none; }
 .city-info { flex: 1; display: flex; flex-direction: column; }
 .city-row .btn { flex: none; }
+
+/* ---------- Cours / Grimoire des Gammes ---------- */
+.course-mod { padding: 12px 14px; }
+.cm-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.cm-ic { font-size: 1.4rem; flex: none; }
+.cm-main { flex: 1; display: flex; flex-direction: column; }
+.locked-note { padding: 8px 2px; }
+.lesson-row { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; background: #0e1022; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; margin: 6px 0; color: var(--text); font-size: .92rem; cursor: pointer; }
+.lesson-row:disabled { opacity: .5; cursor: not-allowed; }
+.lesson-row.done { border-color: #1e7a47; }
+.lr-check { width: 20px; text-align: center; color: #10b981; flex: none; }
+.lr-title { flex: 1; }
+.lesson-goal { border-left: 4px solid var(--accent); font-weight: 500; }
+.lesson-pitfall { border-left: 4px solid #f59e0b; font-size: .92rem; }
+.lb { margin: 0 0 8px; font-size: .78rem; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); }
+.lesson-theory { line-height: 1.6; margin: 0; }
+.tab { background: #0c0d18; border: 1px solid var(--line); border-radius: 10px; padding: 12px; overflow-x: auto; font-family: ui-monospace, Menlo, monospace; font-size: .82rem; line-height: 1.5; color: #cfe3ff; }
+.fretboard { margin-top: 12px; display: flex; justify-content: center; }
+.mini-card { display: flex; flex-direction: column; gap: 2px; background: #0e1022; border: 1px solid var(--line); border-radius: 10px; padding: 9px 11px; margin: 6px 0; }
+.mini-card b { font-size: .9rem; }
+.mini-card span { color: var(--muted); font-size: .86rem; }
+.fiche-row { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin: 8px 0; color: var(--text); cursor: pointer; }
+.fiche-row:disabled { opacity: .55; cursor: not-allowed; }
+.fr-ic { font-size: 1.4rem; flex: none; }
+.fiche-sec { margin: 12px 0; }
+.fiche-sec h3 { margin: 0 0 4px; font-size: .98rem; color: var(--accent); }
+.fiche-sec p { margin: 0; line-height: 1.55; }
+.fiche-intro { color: var(--muted); font-style: italic; margin: 0 0 6px; }
+@media print { #nav, .back, [data-print] { display: none !important; } .card { break-inside: avoid; } }

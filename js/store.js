@@ -81,7 +81,7 @@
       settings:{ name:'', coach:'adaptatif', startDate:Dates.today() },
       disciplines, journal:[], badges:[], log:[], stats:{ reviewsDone:0 },
       daily:{}, quests:defaultQuests(), readingLog:[], opinions:[], diary:[],
-      city:{ buildings:{} } };
+      city:{ buildings:{} }, courseProgress:{ lessons:{} } };
   }
 
   /* ---------- Persistance ---------- */
@@ -103,6 +103,8 @@
       if (!s.diary) s.diary = [];
       if (!s.city) s.city = { buildings:{} };
       if (!s.city.buildings) s.city.buildings = {};
+      if (!s.courseProgress) s.courseProgress = { lessons:{} };
+      if (!s.courseProgress.lessons) s.courseProgress.lessons = {};
       return s;
     } catch { return freshState(); }
   }
@@ -365,6 +367,16 @@
   const City = { domains:CITY_DOMAINS, stepsMax:STAGE_STEPS_MAX, buildingTier, townHallTier,
     buildingMaxTier, tierCost, pierresEarned, pierresSpent, pierresAvailable, canUpgrade, upgradeBuilding };
 
+  /* ---------- Cours (leçons validées) ---------- */
+  function lessonDone(lessonId) { return !!(state.courseProgress && state.courseProgress.lessons[lessonId]); }
+  function markLessonDone(lessonId) {
+    if (!state.courseProgress) state.courseProgress = { lessons:{} };
+    if (state.courseProgress.lessons[lessonId]) return false;
+    state.courseProgress.lessons[lessonId] = true;
+    save();
+    return true;
+  }
+
   window.Store = {
     get state() { return state; },
     Dates, H,
@@ -374,7 +386,7 @@
     questProgress, toggleQuestStep,
     addSession, addXp, setCefr, addGoal, toggleGoal, removeGoal,
     refreshBadges, save, reset,
-    City,
+    City, lessonDone, markLessonDone,
     exportJSON, importJSON,
     /* Profils */
     getProfiles, createProfile, deleteProfile, switchProfile,

@@ -4,6 +4,7 @@
 (function () {
   const { DOMAINS, DISCIPLINES, CEFR_LEVELS, DAILY_HABITS, NEW_CARDS_PER_DAY } = window.MAESTRIA_CONFIG;
   const { DECKS, READINGS } = window.MAESTRIA_CONTENT;
+  const { COURSES } = window.MAESTRIA_COURSES;
   const S = window.Store;
   const { Dates, H } = S;
 
@@ -13,6 +14,7 @@
   /* État de session (révision une-carte-à-la-fois & mode découverte) */
   let reviewQueue = null, reviewIdx = 0, reviewRevealed = false, reviewMode = 'due';  // 'due' ou 'free'
   let reviewXpEarned = 0;  // XP réellement gagnée pendant la session de dues en cours
+  let lastRenderDay = '';  // jour (YYYY-MM-DD) du dernier rendu — pour détecter le passage à un nouveau jour
   let studyDeckId = null, studyIdx = 0, studyFlip = false;
 
   /* Mélange un tableau (copie, Fisher-Yates) — pour l'entraînement libre. */
@@ -435,6 +437,7 @@
       </header>
       ${xpBar(d.xp,dom.color)}
 
+      ${COURSES[id]?`<button class="card cta" data-go="#/course/${id}">🎸 ${esc(COURSES[id].title)} — le cours →</button>`:''}
       ${cfg.features&&cfg.features.metronome?`<button class="card cta" data-go="#/tools">🎼 Ouvrir le métronome →</button>`:''}
       ${cfg.features&&cfg.features.decks?`<button class="card cta" data-go="#/learn">📖 Decks de cartes (façon Anki) →</button>`:''}
 
@@ -549,61 +552,116 @@
      ====================================================== */
   const BUILDING_NAMES = { corps:'Le Dojo', art:'La Scène', esprit:'La Grande Bibliothèque', langues:'La Tour des Langues' };
   const BUILDING_EMBLEM = { corps:'🥊', art:'🎶', esprit:'📚', langues:'🗣️', pro:'🏛️' };
+  const CITY_COLORS = {
+    corps:   { lit:'#e2483f', shadow:'#9e2c2c', roof:'#6f2030', roof2:'#7d2636' },
+    art:     { lit:'#f0a020', shadow:'#b9760d', roof:'#7a4a12' },
+    pro:     { lit:'#1fa8e0', shadow:'#1379a8', roof:'#145a78' },
+    esprit:  { lit:'#6d6ef0', shadow:'#4446b8', roof:'#2f2f7a' },
+    langues: { lit:'#1fc08a', shadow:'#0f8f64', roof:'#0c6a55' },
+  };
 
-  /* Dessine un bâtiment en élévation, dont la hauteur/les détails croissent avec le palier. */
-  function drawBuilding(type, cx, gy, tier, color) {
-    if (tier <= 0) {
-      return `<g opacity="0.55"><rect x="${cx-22}" y="${gy-24}" width="44" height="24" fill="none" stroke="${color}" stroke-width="1.5" stroke-dasharray="4 3"/>`
-        + `<text x="${cx}" y="${gy-8}" font-size="14" text-anchor="middle">🚧</text></g>`;
-    }
-    const floors = Math.min(tier, 4), h = 22 + floors * 13, w = 46, x = cx - w/2, ty = gy - h;
-    const flag = (y) => `<line x1="${cx}" y1="${y}" x2="${cx}" y2="${y-13}" stroke="#cbd5ff" stroke-width="1.5"/><path d="M${cx} ${y-13} l12 4 l-12 4 z" fill="${color}"/>`;
-    let s = `<rect x="${x}" y="${ty}" width="${w}" height="${h}" rx="3" fill="#10122a" stroke="${color}" stroke-width="2"/>`;
-    for (let f = 0; f < floors; f++) {
-      const wy = gy - (f+1)*13 + 3;
-      s += `<rect x="${cx-10}" y="${wy}" width="7" height="8" rx="1.5" fill="#ffd16b"/><rect x="${cx+3}" y="${wy}" width="7" height="8" rx="1.5" fill="#ffd16b"/>`;
-    }
-    if (type === 'corps') {
-      s += `<path d="M${cx-w/2-6} ${ty} Q${cx} ${ty-15} ${cx+w/2+6} ${ty} Z" fill="${color}"/>`;
-      s += `<path d="M${cx-w/2-1} ${ty-11} Q${cx} ${ty-23} ${cx+w/2+1} ${ty-11} Z" fill="${color}" opacity="0.85"/>`;
-    } else if (type === 'art') {
-      s += `<path d="M${x} ${ty} A ${w/2} ${w/2} 0 0 1 ${cx+w/2} ${ty} Z" fill="${color}"/>`;
-    } else if (type === 'esprit') {
-      s += `<rect x="${x-4}" y="${ty}" width="${w+8}" height="4" fill="${color}"/>`;
-      s += `<polygon points="${x-4},${ty} ${cx},${ty-16} ${cx+w/2+4},${ty}" fill="${color}"/>`;
+  /* Palier 0 : chantier (fondation + échafaudage + plan en pointillés). */
+  function cityScaffold(cx, gy, lit) {
+    return `<ellipse cx="${cx}" cy="${gy+2}" rx="32" ry="5" fill="#14231a" opacity="0.5"/>`
+      + `<rect x="${cx-24}" y="${gy-6}" width="48" height="6" fill="#3a3320"/>`
+      + `<g stroke="#6b5b3a" stroke-width="2" fill="none"><path d="M${cx-18} ${gy} L${cx-12} ${gy-26} L${cx+12} ${gy-26} L${cx+18} ${gy}"/><line x1="${cx-15}" y1="${gy-13}" x2="${cx+15}" y2="${gy-13}"/></g>`
+      + `<rect x="${cx-26}" y="${gy-30}" width="52" height="30" fill="none" stroke="${lit}" stroke-width="1.4" stroke-dasharray="4 3" opacity="0.55"/>`;
+  }
+
+  /* Bâtiment paramétrique : chantier au palier 0, puis grandit (étages + détails) avec le palier. */
+  function drawBuilding(type, cx, gy, tier) {
+    const col = CITY_COLORS[type];
+    if (tier <= 0) return cityScaffold(cx, gy, col.lit);
+    const SPEC = { corps:{w:64,cap:3,fh:20}, art:{w:68,cap:2,fh:24}, pro:{w:68,cap:4,fh:22}, esprit:{w:66,cap:2,fh:26}, langues:{w:34,cap:3,fh:24} };
+    const sp = SPEC[type], w = sp.w, x = cx - w/2;
+    const floors = Math.max(1, Math.min(tier, sp.cap));
+    const h = 10 + floors*sp.fh, top = gy - h, dpx = 9, dpy = 6;
+    const win = (on) => on ? '#ffd66b' : '#2b2c46';
+    let s = `<ellipse cx="${cx}" cy="${gy+2}" rx="${w/2+8}" ry="6" fill="#14231a" opacity="0.5"/>`;
+    s += `<polygon points="${x+w},${top} ${x+w+dpx},${top-dpy} ${x+w+dpx},${gy-dpy} ${x+w},${gy}" fill="${col.shadow}"/>`;
+    s += `<rect x="${x}" y="${top}" width="${w}" height="${h}" fill="${col.lit}"/>`;
+
+    if (type === 'esprit') {
+      for (let i = 0; i < 4; i++) { const cxx = x + 8 + i*((w-16)/3) - 3; s += `<rect x="${cxx}" y="${top+8}" width="6" height="${h-8}" fill="#d8d8f5"/>`; }
+      s += `<rect x="${cx-7}" y="${gy-20}" width="14" height="20" fill="#241726"/>`;
     } else if (type === 'langues') {
-      s += `<polygon points="${x},${ty} ${cx},${ty-22} ${cx+w/2},${ty}" fill="${color}"/>` + flag(ty-22);
-    } else { /* pro : Hôtel de ville — créneaux + horloge */
-      s += `<rect x="${x-2}" y="${ty-8}" width="${w+4}" height="8" fill="${color}"/>`;
-      for (let i = 0; i < 4; i++) s += `<rect x="${x-2 + i*((w+4)/4)}" y="${ty-14}" width="6" height="6" fill="${color}"/>`;
-      s += `<circle cx="${cx}" cy="${gy-h/2}" r="7" fill="#0d0e1a" stroke="${color}" stroke-width="2"/>`
-        + `<line x1="${cx}" y1="${gy-h/2}" x2="${cx}" y2="${gy-h/2-5}" stroke="${color}" stroke-width="1.5"/>`
-        + `<line x1="${cx}" y1="${gy-h/2}" x2="${cx+4}" y2="${gy-h/2}" stroke="${color}" stroke-width="1.5"/>`;
+      for (let f = 0; f < floors; f++) { const wy = gy-(f+1)*sp.fh+6; s += `<rect x="${cx-4}" y="${wy}" width="9" height="13" rx="1" fill="${win(true)}"/>`; }
+      s += `<rect x="${cx-7}" y="${gy-18}" width="14" height="18" fill="#241726"/>`;
+    } else {
+      for (let f = 0; f < floors; f++) {
+        const wy = gy-(f+1)*sp.fh+6;
+        s += `<rect x="${x+8}" y="${wy}" width="13" height="15" rx="1" fill="${win(f!==1)}"/>`;
+        s += `<rect x="${x+w-21}" y="${wy}" width="13" height="15" rx="1" fill="${win(true)}"/>`;
+      }
+      s += `<rect x="${cx-9}" y="${gy-24}" width="18" height="24" fill="#241726"/>`;
     }
-    if (tier >= 3 && type !== 'langues' && type !== 'pro') s += flag(ty-2);
-    s += `<text x="${cx}" y="${gy-6}" font-size="13" text-anchor="middle">${BUILDING_EMBLEM[type]}</text>`;
+
+    if (type === 'corps') {
+      s += `<polygon points="${x-9},${top} ${x+w+9},${top} ${x+w-7},${top-15} ${x+7},${top-15}" fill="${col.roof}"/>`;
+      s += `<polygon points="${x+3},${top-15} ${x+w-3},${top-15} ${x+w-13},${top-28} ${x+13},${top-28}" fill="${col.roof2}"/>`;
+      s += `<rect x="${cx-3}" y="${top-34}" width="6" height="8" fill="${col.roof}"/>`;
+    } else if (type === 'art') {
+      s += `<path d="M${x},${top} A${w/2},30 0 0 1 ${x+w},${top} Z" fill="${col.roof}"/>`;
+      s += `<rect x="${x+6}" y="${top+4}" width="${w-12}" height="11" rx="2" fill="#2a1c30"/>`;
+      s += `<circle cx="${x+w*0.3}" cy="${top+9}" r="2" fill="#ffd66b"/><circle cx="${cx}" cy="${top+9}" r="2" fill="#ffd66b"/><circle cx="${x+w*0.7}" cy="${top+9}" r="2" fill="#ffd66b"/>`;
+    } else if (type === 'esprit') {
+      s += `<rect x="${x-4}" y="${top-4}" width="${w+8}" height="6" fill="${col.roof}"/>`;
+      s += `<polygon points="${x-4},${top-4} ${x+w+4},${top-4} ${cx},${top-26}" fill="${col.roof}"/>`;
+    } else if (type === 'langues') {
+      s += `<polygon points="${x-4},${top} ${x+w+4},${top} ${cx},${top-24}" fill="${col.roof}"/>`;
+      s += `<line x1="${cx}" y1="${top-24}" x2="${cx}" y2="${top-38}" stroke="#cdd6ff" stroke-width="1.5"/>`;
+      s += `<polygon points="${cx},${top-38} ${cx+16},${top-34} ${cx},${top-30}" fill="${col.lit}"/>`;
+    } else {
+      for (let i = 0; i < 4; i++) s += `<rect x="${x + i*(w/4)+2}" y="${top-8}" width="8" height="8" fill="${col.roof}"/>`;
+      const tw = 32, tx = cx-tw/2, tTop = top-46;
+      s += `<polygon points="${tx+tw},${tTop} ${tx+tw+7},${tTop-5} ${tx+tw+7},${top-5} ${tx+tw},${top}" fill="${col.shadow}"/>`;
+      s += `<rect x="${tx}" y="${tTop}" width="${tw}" height="${top-tTop}" fill="${col.lit}"/>`;
+      s += `<polygon points="${tx-4},${tTop} ${tx+tw+4},${tTop} ${cx},${tTop-16}" fill="${col.roof}"/>`;
+      s += `<circle cx="${cx}" cy="${tTop+18}" r="8" fill="#0d2030"/><circle cx="${cx}" cy="${tTop+18}" r="8" fill="none" stroke="#ffd66b" stroke-width="1.5"/>`;
+      s += `<line x1="${cx}" y1="${tTop+18}" x2="${cx}" y2="${tTop+12}" stroke="#ffd66b" stroke-width="1.5"/><line x1="${cx}" y1="${tTop+18}" x2="${cx+4}" y2="${tTop+20}" stroke="#ffd66b" stroke-width="1.5"/>`;
+      s += `<line x1="${cx}" y1="${tTop-16}" x2="${cx}" y2="${tTop-30}" stroke="#cdd6ff" stroke-width="2"/>`;
+      s += `<polygon points="${cx},${tTop-30} ${cx+22},${tTop-24} ${cx},${tTop-18}" fill="${col.lit}"/>`;
+    }
+
+    if (tier >= 3 && (type === 'corps' || type === 'esprit')) {
+      s += `<line x1="${x+w-6}" y1="${top-2}" x2="${x+w-6}" y2="${top-16}" stroke="#cdd6ff" stroke-width="1.5"/><polygon points="${x+w-6},${top-16} ${x+w+8},${top-12} ${x+w-6},${top-8}" fill="${col.lit}"/>`;
+    }
     return s;
   }
 
   function citySceneSVG() {
-    const T = (d) => S.City.buildingTier(d), gy = 212, th = S.City.townHallTier();
+    const T = (d) => S.City.buildingTier(d), th = S.City.townHallTier(), gy = 350;
     let stars = '';
-    for (let i = 0; i < 30; i++) { const sx = (i*53 % 372) + 4, sy = (i*29 % 92) + 8, r = (i % 3 === 0 ? 1.3 : 0.8); stars += `<circle cx="${sx}" cy="${sy}" r="${r}" fill="#9fb0ff" opacity="${0.25 + (i % 5)*0.12}"/>`; }
-    return `<svg viewBox="0 0 380 250" width="100%" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Ta Cité">
-      <defs>
-        <linearGradient id="csky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1b1f44"/><stop offset="1" stop-color="#0d0e1a"/></linearGradient>
-        <linearGradient id="cgnd" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#21264d"/><stop offset="1" stop-color="#161a36"/></linearGradient>
-      </defs>
-      <rect x="0" y="0" width="380" height="250" fill="url(#csky)"/>
+    for (let i = 0; i < 30; i++) { const sx = (i*89 % 660) + 10, sy = ((i*53) % 150) + 16, r = (i % 4 === 0 ? 1.5 : 1); stars += `<circle cx="${sx}" cy="${sy}" r="${r}" fill="#dfe6ff" opacity="${0.35 + (i % 4)*0.15}"/>`; }
+    return `<svg viewBox="0 0 680 440" width="100%" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Ta Cité">
+      <rect x="0" y="0" width="680" height="440" fill="#0f1133"/>
+      <rect x="0" y="150" width="680" height="200" fill="#1a1846"/>
+      <rect x="0" y="250" width="680" height="120" fill="#271f54"/>
+      <rect x="0" y="300" width="680" height="70" fill="#4a2f5e"/>
+      <rect x="0" y="332" width="680" height="40" fill="#7a4659"/>
       ${stars}
-      <circle cx="322" cy="42" r="17" fill="#f1f3ff" opacity="0.92"/><circle cx="315" cy="38" r="17" fill="url(#csky)"/>
-      <rect x="0" y="206" width="380" height="44" fill="url(#cgnd)"/>
-      <ellipse cx="190" cy="208" rx="205" ry="13" fill="#272c57" opacity="0.6"/>
-      ${drawBuilding('corps', 48, gy, T('corps'), DOMAINS.corps.color)}
-      ${drawBuilding('art', 112, gy, T('art'), DOMAINS.art.color)}
-      ${drawBuilding('pro', 190, gy, th, DOMAINS.pro.color)}
-      ${drawBuilding('esprit', 268, gy, T('esprit'), DOMAINS.esprit.color)}
-      ${drawBuilding('langues', 332, gy, T('langues'), DOMAINS.langues.color)}
+      <circle cx="566" cy="84" r="66" fill="#f3efce" opacity="0.06"/>
+      <circle cx="566" cy="84" r="48" fill="#f3efce" opacity="0.09"/>
+      <circle cx="566" cy="84" r="33" fill="#f5f0cf"/>
+      <circle cx="556" cy="76" r="6" fill="#e4ddb5"/><circle cx="576" cy="92" r="8" fill="#e4ddb5"/><circle cx="560" cy="98" r="4" fill="#e4ddb5"/>
+      <path d="M0,302 Q170,256 340,296 T680,288 L680,440 L0,440 Z" fill="#241c4c"/>
+      <path d="M0,332 Q200,300 400,326 T680,322 L680,440 L0,440 Z" fill="#191338"/>
+      <path d="M30,380 Q40,348 112,346 L566,346 Q642,349 650,382 L650,440 L30,440 Z" fill="#274332"/>
+      <path d="M30,380 Q40,348 112,346 L566,346 Q642,349 650,382" fill="none" stroke="#3a6048" stroke-width="2"/>
+      <path d="M30,394 L650,394 L650,440 L30,440 Z" fill="#1b2e22"/>
+      <polygon points="318,440 382,440 360,352 344,352" fill="#b99a62"/>
+      <line x1="350" y1="440" x2="352" y2="354" stroke="#9c7d49" stroke-width="2" stroke-dasharray="6 8"/>
+      <rect x="76" y="330" width="6" height="22" fill="#2a1c12"/><circle cx="79" cy="320" r="16" fill="#1c3a28"/><circle cx="68" cy="328" r="10" fill="#1c3a28"/><circle cx="90" cy="327" r="10" fill="#1c3a28"/><circle cx="74" cy="315" r="5" fill="#27503a"/>
+      <rect x="652" y="338" width="5" height="16" fill="#2a1c12"/><circle cx="654" cy="330" r="12" fill="#1c3a28"/><circle cx="646" cy="335" r="8" fill="#1c3a28"/>
+      ${drawBuilding('corps', 128, gy, T('corps'))}
+      ${drawBuilding('art', 250, gy, T('art'))}
+      ${drawBuilding('pro', 400, gy, th)}
+      ${drawBuilding('esprit', 519, gy, T('esprit'))}
+      ${drawBuilding('langues', 613, gy, T('langues'))}
+      <rect x="320" y="412" width="3" height="16" fill="#2a2a40"/><circle cx="321" cy="410" r="9" fill="#ffd66b" opacity="0.18"/><circle cx="321" cy="410" r="4" fill="#ffd982"/>
+      <rect x="376" y="412" width="3" height="16" fill="#2a2a40"/><circle cx="377" cy="410" r="9" fill="#ffd66b" opacity="0.18"/><circle cx="377" cy="410" r="4" fill="#ffd982"/>
+      <rect x="338" y="380" width="2" height="12" fill="#2a2a40"/><circle cx="339" cy="378" r="7" fill="#ffd66b" opacity="0.16"/><circle cx="339" cy="378" r="3" fill="#ffd982"/>
+      <rect x="360" y="380" width="2" height="12" fill="#2a2a40"/><circle cx="361" cy="378" r="7" fill="#ffd66b" opacity="0.16"/><circle cx="361" cy="378" r="3" fill="#ffd982"/>
     </svg>`;
   }
 
@@ -904,7 +962,127 @@
   /* ======================================================
      ROUTER
      ====================================================== */
+  /* ======================================================
+     COURS — Le Grimoire des Gammes (leçons + fiches)
+     ====================================================== */
+  function findLesson(lessonId) {
+    for (const cid in COURSES) for (const m of COURSES[cid].modules) {
+      const l = m.lessons.find((x) => x.id === lessonId);
+      if (l) return { course: COURSES[cid], module: m, lesson: l };
+    }
+    return null;
+  }
+  function moduleComplete(m) { return m.lessons.every((l) => S.lessonDone(l.id)); }
+  function moduleUnlocked(course, idx) { return idx === 0 || moduleComplete(course.modules[idx - 1]); }
+  function findModule(moduleId) {
+    for (const cid in COURSES) { const m = COURSES[cid].modules.find((x) => x.id === moduleId); if (m) return { course: COURSES[cid], module: m }; }
+    return null;
+  }
+
+  /* Diagramme de manche en SVG (6 cordes, fenêtre de cases, points de gamme). */
+  function fretboardSVG(d) {
+    if (!d) return '';
+    const cols = d.toFret - d.fromFret + 1, cw = 30, ch = 17, mL = 20, mT = 12;
+    const W = mL + cols * cw + 8, H = mT + 6 * ch + 18;
+    const labels = ['e', 'B', 'G', 'D', 'A', 'E'];
+    let s = `<svg viewBox="0 0 ${W} ${H}" width="100%" style="max-width:${Math.round(W*1.25)}px" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Diagramme de manche"><rect x="0" y="0" width="${W}" height="${H}" rx="8" fill="#141636"/>`;
+    for (let i = 0; i < 6; i++) { const y = mT + i * ch + ch/2; s += `<line x1="${mL}" y1="${y}" x2="${mL+cols*cw}" y2="${y}" stroke="#5a5f88" stroke-width="1"/><text x="${mL-11}" y="${y+3}" fill="#8a8fb5" font-size="10" text-anchor="middle">${labels[i]}</text>`; }
+    for (let j = 0; j <= cols; j++) { const x = mL + j*cw, nut = (d.fromFret === 1 && j === 0); s += `<line x1="${x}" y1="${mT+ch/2}" x2="${x}" y2="${mT+6*ch-ch/2}" stroke="${nut?'#cdd6ff':'#3a3f6e'}" stroke-width="${nut?3:1}"/>`; }
+    for (let j = 0; j < cols; j++) { const x = mL + j*cw + cw/2; s += `<text x="${x}" y="${H-4}" fill="#6b7099" font-size="9" text-anchor="middle">${d.fromFret+j}</text>`; }
+    d.dots.forEach((dot) => { const y = mT + (dot.s-1)*ch + ch/2, x = mL + (dot.f - d.fromFret)*cw + cw/2, c = dot.root ? '#f59e0b' : '#a78bfa';
+      s += `<circle cx="${x}" cy="${y}" r="7" fill="${c}"/>`;
+      if (dot.label) s += `<text x="${x}" y="${y+3}" fill="#141636" font-size="8" text-anchor="middle" font-weight="700">${esc(dot.label)}</text>`; });
+    return s + `</svg>`;
+  }
+
+  function viewCourse(courseId) {
+    nav.hidden = false;
+    const c = COURSES[courseId];
+    if (!c) { app.innerHTML = `<div class="card empty">Cours introuvable.</div>`; return; }
+    const mods = c.modules.map((m, idx) => {
+      const unlocked = moduleUnlocked(c, idx), done = m.lessons.filter((l) => S.lessonDone(l.id)).length, total = m.lessons.length, complete = done === total;
+      const rows = m.lessons.map((l) => {
+        const ok = S.lessonDone(l.id);
+        return `<button class="lesson-row ${ok?'done':''}" ${unlocked?`data-go="#/lesson/${l.id}"`:'disabled'}>
+          <span class="lr-check">${ok?'✓':(unlocked?'○':'🔒')}</span><span class="lr-title">${esc(l.title)}</span></button>`;
+      }).join('');
+      return `<div class="card course-mod">
+        <div class="cm-head"><span class="cm-ic">${m.icon||'📘'}</span>
+          <div class="cm-main"><b>${esc(m.title)}</b><span class="muted small">${esc(m.goal)}</span></div>
+          <span class="badge">${done}/${total}</span></div>
+        ${unlocked ? rows : `<div class="muted small locked-note">🔒 Termine le module précédent pour débloquer.</div>`}
+        ${m.fiche ? `<button class="btn small block ${complete?'primary':''}" ${complete?`data-go="#/fiche/${m.id}"`:'disabled'}>${complete?'📄 Consulter la fiche':'📄 Fiche — à débloquer'}</button>` : ''}
+      </div>`;
+    }).join('');
+    app.innerHTML = `
+      <header class="dhead"><button class="back" data-go="#/d/${courseId}">‹</button>
+        <div class="dhead-main"><span class="dicon big">🎸</span>
+          <div><h1>${esc(c.title)}</h1><span class="muted small">${esc(c.subtitle)}</span></div></div></header>
+      <button class="btn block" data-go="#/fiches">📚 Bibliothèque de fiches →</button>
+      ${mods}`;
+  }
+
+  function viewLesson(lessonId) {
+    nav.hidden = false;
+    const f = findLesson(lessonId);
+    if (!f) { app.innerHTML = `<div class="card empty">Leçon introuvable.</div>`; return; }
+    const { course, module, lesson } = f, ok = S.lessonDone(lessonId);
+    const cards = (lesson.cards||[]).map((c) => `<div class="mini-card"><b>${esc(c.front)}</b><span>${esc(c.back)}</span></div>`).join('');
+    app.innerHTML = `
+      <header class="dhead"><button class="back" data-go="#/course/${course.id}">‹</button>
+        <div class="dhead-main"><span class="dicon big">${module.icon||'📘'}</span>
+          <div><h1>${esc(lesson.title)}</h1><span class="muted small">${esc(module.title)}</span></div></div></header>
+      <div class="card lesson-goal">🎯 ${esc(lesson.goal)}</div>
+      <div class="card"><h3 class="lb">📖 Théorie</h3><p class="lesson-theory">${esc(lesson.theory)}</p>
+        ${lesson.diagram?`<div class="fretboard">${fretboardSVG(lesson.diagram)}</div>`:''}</div>
+      ${lesson.tab?`<div class="card"><h3 class="lb">${esc(lesson.tabLabel||'🎸 Exercice')}</h3><pre class="tab">${esc(lesson.tab)}</pre></div>`:''}
+      ${lesson.bpm?`<div class="card"><h3 class="lb">⏱️ Cible métronome</h3><p>Départ <b>${lesson.bpm.start} BPM</b> → objectif <b>${lesson.bpm.goal} BPM</b>. Propreté avant vitesse.</p>
+        <button class="btn block primary" data-metro="${lesson.bpm.start}">⏱️ Régler le métronome à ${lesson.bpm.start} BPM →</button></div>`:''}
+      <div class="card"><h3 class="lb">✅ Réussite</h3><p>${esc(lesson.success)}</p></div>
+      ${cards?`<div class="card"><h3 class="lb">🧠 À mémoriser</h3>${cards}
+        <button class="btn small block" data-enroll="${lesson.id}">Envoyer ces cartes en révision →</button></div>`:''}
+      <div class="card lesson-pitfall">⚠️ <b>Piège :</b> ${esc(lesson.pitfall)}</div>
+      <button class="card cta ${ok?'':'primary'}" data-lesson-done="${lesson.id}">${ok?'✓ Validée — refaire la leçon':'Marquer comme réussie ✓'}</button>`;
+  }
+
+  function viewFiches() {
+    nav.hidden = false;
+    let rows = '';
+    for (const cid in COURSES) COURSES[cid].modules.forEach((m) => {
+      if (!m.fiche) return;
+      const complete = moduleComplete(m);
+      rows += `<button class="fiche-row" ${complete?`data-go="#/fiche/${m.id}"`:'disabled'}>
+        <span class="fr-ic">${complete?'📄':'🔒'}</span>
+        <div class="cm-main"><b>${esc(m.fiche.title)}</b><span class="muted small">${complete?esc(COURSES[cid].title):'Termine le module « '+esc(m.title)+' »'}</span></div></button>`;
+    });
+    app.innerHTML = `
+      <header class="dhead"><button class="back" data-go="#/course/guitare">‹</button>
+        <div class="dhead-main"><span class="dicon big">📚</span>
+          <div><h1>Bibliothèque de fiches</h1><span class="muted small">Ta théorie, débloquée à vie</span></div></div></header>
+      ${rows || `<div class="card empty">Aucune fiche pour l'instant. Termine un module.</div>`}`;
+  }
+
+  function viewFiche(moduleId) {
+    nav.hidden = false;
+    const fm = findModule(moduleId);
+    if (!fm || !fm.module.fiche) { app.innerHTML = `<div class="card empty">Fiche introuvable.</div>`; return; }
+    if (!moduleComplete(fm.module)) { app.innerHTML = `<div class="card empty">🔒 Termine le module pour débloquer cette fiche.</div><button class="card cta" data-go="#/course/${fm.course.id}">‹ Retour au cours</button>`; return; }
+    const f = fm.module.fiche;
+    const secs = f.sections.map((sec) => `<div class="fiche-sec"><h3>${esc(sec.h)}</h3><p>${esc(sec.body)}</p></div>`).join('');
+    app.innerHTML = `
+      <header class="dhead"><button class="back" data-go="#/fiches">‹</button>
+        <div class="dhead-main"><span class="dicon big">📄</span>
+          <div><h1>${esc(f.title)}</h1><span class="muted small">${esc(fm.course.title)} · ${esc(fm.module.title)}</span></div></div></header>
+      <div class="card fiche">
+        ${f.intro?`<p class="fiche-intro">${esc(f.intro)}</p>`:''}
+        ${secs}
+        ${f.diagram?`<div class="fretboard">${fretboardSVG(f.diagram)}</div>`:''}
+      </div>
+      <button class="btn block" data-print>🖨️ Imprimer / enregistrer en PDF</button>`;
+  }
+
   function render() {
+    lastRenderDay = Dates.today();
     if (!S.hasProfile()) { viewProfilePicker(); return; }
     const hash=location.hash||'#/', parts=hash.replace('#/','').split('/');
     const root=parts[0]||'';
@@ -918,6 +1096,10 @@
     else if (root==='read')  { if (parts[1]==='opinions') viewOpinions(); else viewReading(); }
     else if (root==='diary') { if (parts[1]==='bilan') viewBilan(); else viewDiary(); }
     else if (root==='city')  viewCity();
+    else if (root==='course') viewCourse(parts[1]);
+    else if (root==='lesson') viewLesson(parts[1]);
+    else if (root==='fiches') viewFiches();
+    else if (root==='fiche')  viewFiche(parts[1]);
     else if (root==='study') viewStudy(parts[1]);
     else if (root==='d')    viewDiscipline(parts[1]);
     else if (root==='review') viewReview(parts[1]);
@@ -973,6 +1155,29 @@
     if (build) { const r=S.City.upgradeBuilding(build.dataset.build);
       if (r.ok) { afterMutation(); toast(`🏗️ ${BUILDING_NAMES[build.dataset.build]} niveau ${r.tier} !`); }
       render(); return; }
+
+    /* Cours : régler le métronome à la cible d'une leçon */
+    const metro=e.target.closest('[data-metro]');
+    if (metro) { if (window.Metronome) window.Metronome.setBpm(Number(metro.dataset.metro)); location.hash='#/tools'; return; }
+
+    /* Cours : valider une leçon */
+    const ldone=e.target.closest('[data-lesson-done]');
+    if (ldone) { const id=ldone.dataset.lessonDone;
+      if (S.markLessonDone(id)) { const r=S.addXp('guitare', 20, 'course'); afterMutation(r);
+        const f=findLesson(id);
+        toast(f && moduleComplete(f.module) && f.module.fiche ? `📄 Fiche débloquée : ${f.module.fiche.title} !` : 'Leçon validée · +20 XP');
+      }
+      render(); return; }
+
+    /* Cours : envoyer les cartes d'une leçon dans le SRS */
+    const enroll=e.target.closest('[data-enroll]');
+    if (enroll) { const f=findLesson(enroll.dataset.enroll);
+      if (f) { let n=0; (f.lesson.cards||[]).forEach((c,i)=>{ if(window.SRS.enrollCard('guitare',{key:`course_${f.lesson.id}_${i}`,front:c.front,back:c.back},'course_guitare')) n++; }); S.save();
+        toast(n?`${n} carte${n>1?'s':''} — file dans Réviser 🧠`:'Ces cartes sont déjà en révision.'); }
+      return; }
+
+    /* Fiche : imprimer / PDF */
+    if (e.target.closest('[data-print]')) { window.print(); return; }
 
     /* Démarrer une leçon : inscrire des cartes dans le SRS */
     const lesson=e.target.closest('[data-lesson]');
@@ -1161,6 +1366,14 @@
   }
 
   window.addEventListener('hashchange', render);
+
+  /* Passage à un nouveau jour : quand l'app revient au premier plan et que la date a changé,
+     on réinitialise la session de révision figée d'hier et on re-rend (les cartes dues du jour apparaissent). */
+  function refreshIfNewDay() {
+    if (Dates.today() !== lastRenderDay) { reviewQueue = null; reviewMode = 'due'; render(); }
+  }
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') refreshIfNewDay(); });
+  window.addEventListener('focus', refreshIfNewDay);
 
   nav.innerHTML=`
     <button data-go="#/" data-root=""><span>🗓️</span>Aujourd'hui</button>
