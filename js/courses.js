@@ -238,6 +238,132 @@ const COURSES = {
         },
       },
 
+      /* ---------------- MODULE 3 — LEGATO & TECHNIQUE ---------------- */
+      {
+        id: 'm3', icon: '🌊', title: 'Legato & technique',
+        goal: `Des notes liées, fluides — sans l'attaque sèche du médiator sur chaque note.`,
+        lessons: [
+          {
+            id: 'm3l1', title: 'Hammer‑on & pull‑off',
+            goal: `Lier 2 notes sans repincer la corde.`,
+            theory: `Le hammer-on : tu frappes une case avec un doigt SANS repincer la corde — le son vient de l'impact du doigt, pas du médiator. Le pull-off : l'inverse, tu retires un doigt en tirant légèrement la corde vers le bas pour la faire sonner. Ensemble, ils créent le son « lié », caractéristique du legato.`,
+            diagram: null,
+            tab: `A|--5h7p5--5h7p5--|`,
+            tabLabel: `🎸 Hammer-on (h) / Pull-off (p)`,
+            bpm: { start: 60, goal: 110 },
+            success: `Joue ce motif en boucle, propre à 90 BPM : le hammer et le pull-off doivent sonner AUSSI fort que les notes piquées.`,
+            cards: [
+              { front:`Hammer-on`, back:`Frapper une case sans repincer — le son vient de l'impact du doigt` },
+              { front:`Pull-off`, back:`Retirer un doigt en tirant légèrement la corde vers le bas` },
+              { front:`Notation tab : « h » et « p »`, back:`h = hammer-on, p = pull-off, entre 2 chiffres` },
+            ],
+            pitfall: `Le hammer-on/pull-off sonne plus faible que les notes piquées — insiste sur la force du doigt, pas juste le mouvement.`,
+          },
+          {
+            id: 'm3l2', title: 'Pick‑hammer‑hammer (3 notes/corde)',
+            goal: `Économiser des coups de médiator sur les patterns 3 notes par corde.`,
+            theory: `Reprends la forme « 3 notes par corde » de la gamme majeure (module 1). Combine-la avec le legato : joue la 1ère note au médiator, puis hammer vers la 2e, hammer vers la 3e — un seul coup de médiator pour 3 notes. C'est l'un des moyens les plus efficaces d'augmenter ta vitesse sans fatiguer la main droite.`,
+            diagram: null,
+            tab: `E|--3h5h7--------------------|`,
+            tabLabel: `🎸 Pick‑hammer‑hammer`,
+            bpm: { start: 60, goal: 120 },
+            success: `Joue chaque corde du système 3‑notes‑par‑corde avec un seul coup de médiator (pick‑hammer‑hammer), montée complète.`,
+            cards: [
+              { front:`Le pattern pick‑hammer‑hammer économise combien de coups de médiator par corde ?`, back:`2 sur 3 — un seul picking, 2 hammer-ons` },
+            ],
+            pitfall: `Vouloir tout jouer vite trop tôt : ce pattern doit d'abord sonner ÉGAL en volume (piqué = hammer) avant de chercher la vitesse.`,
+          },
+          {
+            id: 'm3l3', title: 'L\'exercice araignée (spider)',
+            goal: `Muscler l'indépendance des 4 doigts, hors contexte de gamme précise.`,
+            theory: `L'exercice « araignée » : 1 doigt par case, sur 4 cases consécutives, en changeant de corde. C'est l'exercice d'échauffement n°1 de la plupart des guitaristes, tous styles confondus — il ne sert pas à jouer une gamme précise, juste à muscler chaque doigt indépendamment.`,
+            diagram: null,
+            tab: `E|--1--2--3--4--|\nB|--1--2--3--4--|\nG|--1--2--3--4--|\nD|--1--2--3--4--|\nA|--1--2--3--4--|\nE|--1--2--3--4--|`,
+            tabLabel: `🎸 Exercice araignée`,
+            bpm: { start: 60, goal: 140 },
+            success: `Joue l'araignée sur les 6 cordes sans lever les doigts inutilement — doigts 1‑2‑3‑4 chacun sur sa case.`,
+            cards: [
+              { front:`À quoi sert l'exercice araignée ?`, back:`Muscler l'indépendance des 4 doigts, hors contexte de gamme précise` },
+            ],
+            pitfall: `Lever tous les doigts entre chaque note. Garde les doigts déjà posés en place, lève seulement celui qui doit bouger.`,
+          },
+        ],
+        fiche: {
+          title: 'Legato & technique — l\'essentiel',
+          intro: `Des notes liées, fluides — la base du son « legato ».`,
+          sections: [
+            { h:`Hammer-on / pull-off`, body:`Hammer-on : frapper sans repincer. Pull-off : retirer en tirant légèrement la corde.` },
+            { h:`Pick-hammer-hammer`, body:`Sur 3 notes/corde : 1 coup de médiator + 2 hammer-ons = vitesse sans fatigue.` },
+            { h:`L'araignée`, body:`1 doigt par case sur 4 cases, en changeant de corde. L'échauffement de référence.` },
+          ],
+          diagram: null,
+        },
+      },
+
+      /* ---------------- MODULE 4 — LES MODES ---------------- */
+      {
+        id: 'm4', icon: '🎨', title: 'Les modes',
+        goal: `Les mêmes 7 notes, 7 couleurs différentes selon la tonique.`,
+        lessons: [
+          {
+            id: 'm4l1', title: 'Le principe des modes',
+            goal: `Comprendre que les modes sont la même gamme, tonique différente.`,
+            theory: `Un mode, ce sont les mêmes 7 notes qu'une gamme majeure, mais avec une tonique différente — exactement le principe déjà vu avec la relative pentatonique (module 2), appliqué à toute la gamme. Classe les 7 modes du plus « brillant » au plus « sombre » : Lydien (#4, le plus brillant) > Ionien (majeur, référence) > Mixolydien (♭7) > Dorien (♭3 ♭7) > Éolien (♭3 ♭6 ♭7, le mineur naturel) > Phrygien (♭2 ♭3 ♭6 ♭7) > Locrien (♭2 ♭5, le plus sombre). Chaque mode se joue avec les positions de gamme majeure déjà connues — seule la résolution change.`,
+            diagram: null, tab: null, bpm: null,
+            success: `Récite l'échelle de brillance des 7 modes, du plus brillant au plus sombre, avec leur altération caractéristique.`,
+            cards: [
+              { front:`Lydien (altération caractéristique)`, back:`#4 — le mode le plus brillant` },
+              { front:`Mixolydien`, back:`♭7 — la gamme de l'accord de dominante` },
+              { front:`Dorien`, back:`♭3 ♭7, mais 6te MAJEURE — plus « jazzy » que le mineur naturel` },
+              { front:`Locrien`, back:`♭2 ♭5 — le mode le plus instable/sombre` },
+            ],
+            pitfall: `Croire qu'il faut apprendre 7 nouvelles formes de manche. Ce sont les MÊMES notes que la majeure — seule la tonique change.`,
+          },
+          {
+            id: 'm4l2', title: 'Dorien & Mixolydien (les 2 utilitaires)',
+            goal: `Les 2 modes les plus employés en rock, funk et jazz.`,
+            theory: `Dorien = gamme mineure avec une 6te MAJEURE (au lieu de mineure) — ça lui donne une couleur « jazzy », moins triste que le mineur naturel. Immensément utilisé en jazz, funk et rock. Mixolydien = gamme majeure avec une 7e MINEURE — la gamme de l'accord de dominante (7), le son du blues‑rock et du funk. Les deux sont directement utiles sur tes backing tracks.`,
+            diagram: { fromFret: 5, toFret: 10, dots: [
+              { s:5, f:5, root:true }, { s:5, f:7 }, { s:5, f:8, label:'♭3' },
+              { s:4, f:5 }, { s:4, f:7 }, { s:4, f:9, label:'6' }, { s:4, f:10, label:'♭7' },
+            ] },
+            tab: null, bpm: null,
+            success: `Joue cette portion de Ré dorien en insistant sur la 6te (Si, corde de ré case 9) — LA note qui distingue le dorien du mineur naturel.`,
+            cards: [
+              { front:`Ce qui distingue Dorien du mineur naturel`, back:`La 6te est MAJEURE (pas mineure) — ça adoucit la couleur triste` },
+              { front:`Mixolydien = majeur avec quelle altération ?`, back:`La 7e devient mineure (♭7)` },
+            ],
+            pitfall: `Jouer du dorien « par défaut » partout en mineur — il ne convient que si le contexte appelle vraiment cette couleur.`,
+          },
+          {
+            id: 'm4l3', title: 'Phrygien, Lydien & Locrien',
+            goal: `Les couleurs plus rares, à reconnaître par contexte.`,
+            theory: `Phrygien = mineur avec une 2nde MINEURE (♭2) — un son « espagnol/oriental », très utilisé en metal et flamenco. Lydien = majeur avec une 4te AUGMENTÉE (#4) — un son « flottant », rêveur, courant en fusion et musiques de film. Locrien = le mode le plus instable (♭2 ET ♭5) — sa quinte diminuée l'empêche vraiment de « se poser » ; il sert surtout de passage (le ii d'un ii‑V‑I mineur, cf. m7♭5 déjà vu).`,
+            diagram: null, tab: null, bpm: null,
+            success: `Associe chaque mode à son contexte : quel mode pour un son « espagnol » ? Un son « flottant » ? Le plus instable ?`,
+            cards: [
+              { front:`Phrygien (altération + contexte)`, back:`♭2 — son espagnol/oriental (flamenco, metal)` },
+              { front:`Lydien (altération + contexte)`, back:`#4 — son flottant/rêveur (fusion, musique de film)` },
+              { front:`Locrien`, back:`Le plus instable (♭2 ET ♭5) — sert surtout de passage, jamais de résolution` },
+            ],
+            pitfall: `Vouloir absolument « placer » du Locrien dans une impro — c'est le mode le moins utilisé en solo, surtout utile en analyse.`,
+          },
+        ],
+        fiche: {
+          title: 'Les modes — l\'essentiel',
+          intro: `Les mêmes 7 notes, 7 couleurs différentes.`,
+          sections: [
+            { h:`Le principe`, body:`Mêmes notes que la majeure, tonique différente. Échelle de brillance : Lydien > Ionien > Mixolydien > Dorien > Éolien > Phrygien > Locrien.` },
+            { h:`Dorien & Mixolydien`, body:`Les 2 modes utilitaires. Dorien = mineur + 6te majeure. Mixolydien = majeur + ♭7.` },
+            { h:`Phrygien, Lydien, Locrien`, body:`Phrygien (♭2, espagnol) · Lydien (#4, flottant) · Locrien (♭2 ♭5, instable, passage seulement).` },
+          ],
+          diagram: { fromFret: 5, toFret: 10, dots: [
+            { s:5, f:5, root:true }, { s:5, f:7 }, { s:5, f:8, label:'♭3' },
+            { s:4, f:5 }, { s:4, f:7 }, { s:4, f:9, label:'6' }, { s:4, f:10, label:'♭7' },
+          ] },
+        },
+      },
+
       /* ---------------- MODULE 5 — TRIADES ---------------- */
       {
         id: 'm5', icon: '🔺', title: 'Triades',
@@ -375,6 +501,92 @@ const COURSES = {
             { h:`Voicing pratique`, body:`Cmaj9 sans 5te : construit depuis le shell Cmaj7 en ajoutant juste la 9e.` },
           ],
           diagram: { fromFret: 0, toFret: 5, dots: [ { s:5, f:3, root:true, label:'R' }, { s:4, f:0, label:'9' }, { s:3, f:4, label:'7' }, { s:2, f:5, label:'3' } ] },
+        },
+      },
+
+      /* ---------------- MODULE 8 — COMPING ---------------- */
+      {
+        id: 'm8', icon: '🥁', title: 'Comping',
+        goal: `Accompagner avec des accords rythmés — l'art de l'espace et du groove.`,
+        lessons: [
+          {
+            id: 'm8l1', title: 'Le rôle du comping',
+            goal: `Comprendre ce qui distingue le comping jazz d'un gratté pop régulier.`,
+            theory: `« Comping » (de l'anglais accompanying) = accompagner un soliste ou une mélodie avec des accords rythmés, plutôt que jouer la mélodie toi-même. Contrairement à un gratté pop régulier, le comping jazz est SYNCOPÉ et laisse de l'espace : anticiper légèrement le temps, jouer court (staccato), et surtout ne pas remplir tous les temps — le silence fait partie du groove.`,
+            diagram: null, tab: null, bpm: null,
+            success: `Joue 4 mesures en comping sur un Cmaj7 (voicing du module 6), en variant le placement rythmique — pas toujours sur le temps 1.`,
+            cards: [
+              { front:`Comping =`, back:`Accompagner avec des accords rythmés, syncopés, avec de l'espace` },
+              { front:`Différence avec un gratté pop régulier`, back:`Le comping jazz évite de remplir tous les temps, joue court, anticipe légèrement` },
+            ],
+            pitfall: `Jouer le voicing sur CHAQUE temps sans variation — ça sonne mécanique. Varie le rythme, laisse des trous.`,
+          },
+          {
+            id: 'm8l2', title: 'Comping sur un ii‑V‑I',
+            goal: `Enchaîner Dm7 → G7 → Cmaj7 avec un mouvement de main minimal.`,
+            theory: `Enchaîne les voicings shell déjà appris sur un ii‑V‑I en Do : Dm7 (le ii) → G7 (le V) → Cmaj7 (le I, module 6). Voici G7 en shell voicing. Pour Dm7, reprends le même principe : fondamentale Ré, 7e mineure Do, 3ce mineure Fa. Le secret : entre 2 accords, les notes communes restent, seules 1‑2 notes bougent d'un ton ou demi-ton — c'est le « voice leading », ce qui rend un enchaînement fluide à l'oreille ET facile à jouer.`,
+            diagram: { fromFret: 0, toFret: 3, dots: [ { s:6, f:3, root:true, label:'R' }, { s:4, f:3, label:'♭7' }, { s:2, f:0, label:'3' } ] },
+            tab: `E|--3--| (Sol, fondamentale)\nD|--3--| (Fa, 7e mineure)\nB|--0--| (Si, 3ce, à vide)`,
+            tabLabel: `🎸 G7 (shell voicing)`,
+            bpm: null,
+            success: `Enchaîne Dm7 → G7 → Cmaj7 en gardant le mouvement de main le plus court possible entre chaque accord.`,
+            cards: [
+              { front:`ii‑V‑I en Do majeur = quels accords ?`, back:`Dm7 — G7 — Cmaj7` },
+              { front:`Voice leading`, back:`Les notes communes entre 2 accords restent ; seules 1‑2 bougent d'un ton/demi‑ton` },
+            ],
+            pitfall: `Repartir de zéro (la main qui saute) à chaque accord — cherche toujours le chemin le plus court entre 2 voicings.`,
+          },
+        ],
+        fiche: {
+          title: 'Comping — l\'essentiel',
+          intro: `Accompagner avec des accords rythmés : l'art de l'espace et du groove.`,
+          sections: [
+            { h:`Le rôle du comping`, body:`Accords rythmés, syncopés, avec de l'espace — pas un gratté régulier qui remplit tous les temps.` },
+            { h:`Le ii‑V‑I`, body:`Dm7 → G7 → Cmaj7 en Do majeur, avec les shells voicings déjà appris.` },
+            { h:`Voice leading`, body:`Les notes communes restent ; seules 1‑2 bougent. Cherche toujours le chemin le plus court.` },
+          ],
+          diagram: { fromFret: 0, toFret: 3, dots: [ { s:6, f:3, root:true, label:'R' }, { s:4, f:3, label:'♭7' }, { s:2, f:0, label:'3' } ] },
+        },
+      },
+
+      /* ---------------- MODULE 9 — IMPRO SUR STANDARDS ---------------- */
+      {
+        id: 'm9', icon: '🏆', title: 'Impro sur standards',
+        goal: `Le sommet du Grimoire : combiner gammes, harmonie et phrasé sur une vraie grille.`,
+        lessons: [
+          {
+            id: 'm9l1', title: 'Une gamme, plusieurs accords',
+            goal: `Comprendre le raccourci diatonique sur un ii‑V‑I.`,
+            theory: `Sur un ii‑V‑I, pas besoin de changer de gamme à chaque accord : Dm7, G7 et Cmaj7 partagent exactement les mêmes 7 notes (celles de Do majeur). Improviser sur un ii‑V‑I revient souvent à improviser sur UNE seule gamme, en ciblant les notes de l'accord du moment sur les temps forts. Un raccourci énorme : pas besoin de 3 gammes différentes, juste une bonne oreille pour le phrasé.`,
+            diagram: null, tab: null, bpm: null,
+            success: `Sur un backing track ii‑V‑I en Do, improvise en Do majeur uniquement, en ciblant la fondamentale de l'accord du moment sur le 1er temps de chaque mesure.`,
+            cards: [
+              { front:`Sur un ii‑V‑I diatonique, combien de gammes différentes faut-il réellement ?`, back:`Souvent une seule (celle de la tonalité) — cibler les degrés de l'accord suffit à sonner juste` },
+            ],
+            pitfall: `Changer de gamme à CHAQUE accord par réflexe — commence par la vue d'ensemble (1 gamme), affine ensuite seulement.`,
+          },
+          {
+            id: 'm9l2', title: 'Le blues jazz — l\'application concrète',
+            goal: `Combiner tout ce que tu as appris sur une grille de 12 mesures.`,
+            theory: `Le blues jazz (12 mesures, grille I7‑IV7‑I7‑V7‑IV7‑I7 simplifiée) est le terrain d'entraînement classique pour combiner TOUT ce que tu as appris : la penta/blues (module 2) pour l'attaque directe, le mixolydien (module 4) sur chaque accord de dominante pour plus de couleur jazz, et le phrasé de l'Impro Coach. Commence simple, puis ajoute une seule note « en plus » par chorus pour enrichir progressivement.`,
+            diagram: null, tab: null, bpm: null,
+            success: `Improvise 2 chorus de blues (24 mesures) sur un backing track : le 1er en pentatonique/blues pur, le 2e en ajoutant au moins une note de couleur (6te, 9e) empruntée à la gamme majeure.`,
+            cards: [
+              { front:`Grille blues jazz simplifiée (12 mesures)`, back:`I7 — IV7 — I7 — V7 — IV7 — I7` },
+              { front:`Stratégie de progression en impro`, back:`Commence pentatonique/blues, ajoute UNE note de couleur par chorus — pas tout d'un coup` },
+            ],
+            pitfall: `Vouloir « tout caser » (modes, extensions, arpèges) dès le 1er chorus. La maîtrise vient de l'ajout progressif, pas de la démonstration immédiate.`,
+          },
+        ],
+        fiche: {
+          title: 'Impro sur standards — l\'essentiel',
+          intro: `Le sommet du Grimoire : gammes, harmonie et phrasé réunis sur une vraie grille.`,
+          sections: [
+            { h:`Une gamme, plusieurs accords`, body:`Sur un ii‑V‑I diatonique, une seule gamme suffit souvent — cible les degrés de l'accord du moment.` },
+            { h:`Le blues jazz`, body:`Grille I7‑IV7‑I7‑V7‑IV7‑I7. Combine penta/blues + mixolydien + phrasé.` },
+            { h:`Stratégie`, body:`Commence simple, ajoute une seule note de couleur par chorus — jamais tout d'un coup.` },
+          ],
+          diagram: null,
         },
       },
 
