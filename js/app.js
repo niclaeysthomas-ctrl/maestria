@@ -2,7 +2,7 @@
    Maestria — Rendu, routage et interactions.
    ============================================================ */
 (function () {
-  const { DOMAINS, DISCIPLINES, CEFR_LEVELS, DAILY_HABITS, NEW_CARDS_PER_DAY } = window.MAESTRIA_CONFIG;
+  const { DOMAINS, DISCIPLINES, CEFR_LEVELS, DAILY_HABITS, NEW_CARDS_PER_DAY, CAL_CATEGORIES } = window.MAESTRIA_CONFIG;
   const { DECKS, READINGS } = window.MAESTRIA_CONTENT;
   const { COURSES } = window.MAESTRIA_COURSES;
   const { IMPRO_TIPS } = window.MAESTRIA_IMPRO;
@@ -146,6 +146,7 @@
     const xpToday = S.xpEarnedToday();
     const reading = readingOfToday();
     const readDone = reading && (S.state.readingLog || []).some((x) => x.date === Dates.today() && x.readingId === reading.id);
+    const upcomingWeekCount = S.eventsInRange(Dates.today(), Dates.addDays(Dates.today(), 6)).length;
     const profile = S.activeProfile();
     const name = profile ? profile.name.split(' ')[0] : '';
 
@@ -231,6 +232,8 @@
       ${reading ? `<button class="card cta" data-go="#/read">${reading.icon} Lecture du jour · <span class="muted small">${esc(reading.theme)}</span><br>${esc(reading.title)} ${readDone ? '<span class="badge">✓ lu</span>' : '→'}</button>` : ''}
 
       <button class="card cta" data-go="#/city">🏰 Ta Cité ${S.City.pierresAvailable() > 0 ? `· <span class="badge">${S.City.pierresAvailable()} 🪨 à dépenser</span>` : `<span class="muted small">· monte de niveau pour bâtir</span>`} →</button>
+
+      <button class="card cta" data-go="#/calendar">📅 Calendrier ${upcomingWeekCount > 0 ? `· <span class="badge">${upcomingWeekCount} à venir cette semaine</span>` : `<span class="muted small">· rien de prévu cette semaine</span>`} →</button>
 
       <h2 class="section">🎵 Musique</h2>
       <div class="row">
@@ -718,6 +721,7 @@
         <div class="dhead-main"><span class="dicon big">📔</span>
           <div><h1>Journal</h1><span class="muted small">${written} entrée${written > 1 ? 's' : ''} · une par jour</span></div></div></header>
       <button class="card cta" data-go="#/notes">📒 Mes notes — cahier du jour →</button>
+      <button class="card cta" data-go="#/calendar">📅 Calendrier — toute l'année →</button>
       <button class="btn block" data-go="#/diary/bilan">📅 Bilan des 14 derniers jours →</button>
       <form id="diary-form" class="stack">
         <h2 class="section">${todayEntry ? 'Modifier' : 'Aujourd\'hui'} · ${esc(Dates.label(today))}</h2>
@@ -798,6 +802,101 @@
       ${!isToday ? `<button class="btn block" data-go="#/notes">‹ Retour à aujourd'hui</button>` : ''}
       <h2 class="section">📑 Sommaire</h2>
       ${sommaireHTML}`;
+  }
+
+  /* ======================================================
+     CALENDRIER (année complète + jour + export .ics)
+     ====================================================== */
+  const MONTH_NAMES = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+  const DOW_LETTERS = ['L','M','M','J','V','S','D'];
+
+  function monthCells(year, month) {
+    const first = new Date(year, month, 1);
+    const startDow = (first.getDay() + 6) % 7; // lundi = 0
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const cells = [];
+    for (let i = 0; i < startDow; i++) cells.push(null);
+    for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+    return cells;
+  }
+
+  function viewCalendar(yearParam) {
+    nav.hidden = false;
+    const year = yearParam || new Date().getFullYear();
+    const todayKey = Dates.today();
+
+    const upcoming = S.eventsInRange(todayKey, Dates.addDays(todayKey, 13));
+    const upcomingHTML = upcoming.length ? upcoming.slice(0, 6).map((e) => {
+      const cat = CAL_CATEGORIES.find((c) => c.id === e.category) || CAL_CATEGORIES[0];
+      return `<button class="cal-upcoming-item" style="--c:${cat.color}" data-go="#/calendar/day/${e.date}">
+        <span class="cal-dot" style="background:${cat.color}"></span>
+        <div class="cal-up-main"><b>${esc(e.title)}</b><span class="muted small">${esc(Dates.label(e.date))}</span></div></button>`;
+    }).join('') : `<div class="card empty small">Rien de prévu dans les 14 prochains jours.</div>`;
+
+    const monthsHTML = MONTH_NAMES.map((mname, mi) => {
+      const cells = monthCells(year, mi);
+      const cellsHTML = cells.map((d) => {
+        if (d === null) return `<span class="cal-cell empty"></span>`;
+        const dateKey = `${year}-${String(mi + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+        const evs = S.eventsForDate(dateKey), isToday = dateKey === todayKey;
+        const dots = evs.slice(0, 3).map((e) => { const cat = CAL_CATEGORIES.find((c) => c.id === e.category) || CAL_CATEGORIES[0]; return `<i style="background:${cat.color}"></i>`; }).join('');
+        return `<button class="cal-cell ${isToday ? 'today' : ''} ${evs.length ? 'has-events' : ''}" data-go="#/calendar/day/${dateKey}">
+          <span class="cal-daynum">${d}</span>${dots ? `<span class="cal-dots">${dots}</span>` : ''}</button>`;
+      }).join('');
+      return `<div class="cal-month">
+        <h3 class="cal-month-title">${mname}</h3>
+        <div class="cal-dow">${DOW_LETTERS.map((l) => `<span>${l}</span>`).join('')}</div>
+        <div class="cal-grid">${cellsHTML}</div>
+      </div>`;
+    }).join('');
+
+    const legendHTML = CAL_CATEGORIES.map((c) => `<span class="cal-legend-item"><i style="background:${c.color}"></i>${c.icon} ${esc(c.label)}</span>`).join('');
+
+    app.innerHTML = `
+      <header class="dhead"><button class="back" data-go="#/diary">‹</button>
+        <div class="dhead-main"><span class="dicon big">📅</span>
+          <div><h1>Calendrier</h1><span class="muted small">Tout ce qui compte, sur l'année</span></div></div></header>
+      <div class="row cal-yearnav">
+        <button class="btn block" data-go="#/calendar/${year - 1}">‹ ${year - 1}</button>
+        <span class="cal-year-label">${year}</span>
+        <button class="btn block" data-go="#/calendar/${year + 1}">${year + 1} ›</button>
+      </div>
+      <h2 class="section">📌 Bientôt (14 jours)</h2>
+      ${upcomingHTML}
+      <button class="btn block" data-cal-ics>📤 Exporter vers mon agenda (.ics)</button>
+      <div class="cal-legend">${legendHTML}</div>
+      <div class="cal-year-grid">${monthsHTML}</div>`;
+  }
+
+  function viewCalendarDay(dateKey) {
+    nav.hidden = false;
+    const d = new Date(dateKey + 'T00:00:00');
+    const dow = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'][d.getDay()];
+    const events = S.eventsForDate(dateKey);
+    const eventsHTML = events.length ? events.map((e) => {
+      const cat = CAL_CATEGORIES.find((c) => c.id === e.category) || CAL_CATEGORIES[0];
+      return `<div class="card cal-event" style="--c:${cat.color}">
+        <div class="cal-event-head"><span class="badge">${cat.icon} ${esc(cat.label)}</span>
+          <button class="note-del" data-cal-del="${e.id}" aria-label="Supprimer">✕</button></div>
+        <b>${esc(e.title)}</b>${e.note ? `<p>${esc(e.note)}</p>` : ''}</div>`;
+    }).join('') : `<div class="card empty">Rien de prévu ce jour-là.</div>`;
+    const catOptions = CAL_CATEGORIES.map((c) => `<option value="${c.id}">${c.icon} ${esc(c.label)}</option>`).join('');
+
+    app.innerHTML = `
+      <header class="dhead"><button class="back" data-go="#/calendar">‹</button></header>
+      <div class="cal-day-header">
+        <span class="cal-day-dow">${dow}</span>
+        <span class="cal-day-num">${d.getDate()}</span>
+        <span class="cal-day-month">${MONTH_NAMES[d.getMonth()]} ${d.getFullYear()}</span>
+      </div>
+      <form id="cal-event-form" class="stack">
+        <input type="hidden" name="date" value="${dateKey}">
+        <input type="text" name="title" placeholder="Titre (ex : rendu de dossier, anniversaire…)" required>
+        <select name="category">${catOptions}</select>
+        <textarea name="note" rows="2" placeholder="Détail (optionnel)"></textarea>
+        <button class="btn primary block" type="submit">Ajouter au calendrier</button>
+      </form>
+      ${eventsHTML}`;
   }
 
   /* ======================================================
@@ -1262,6 +1361,7 @@
     else if (root==='read')  { if (parts[1]==='opinions') viewOpinions(); else viewReading(); }
     else if (root==='diary') { if (parts[1]==='bilan') viewBilan(); else viewDiary(); }
     else if (root==='notes') viewNotes(parts[1]);
+    else if (root==='calendar') { if (parts[1]==='day') viewCalendarDay(parts[2]); else viewCalendar(parts[1] ? Number(parts[1]) : null); }
     else if (root==='city')  viewCity();
     else if (root==='course') viewCourse(parts[1]);
     else if (root==='lesson') viewLesson(parts[1]);
@@ -1368,6 +1468,11 @@
     /* Notes : supprimer une entrée du cahier */
     const noteDel=e.target.closest('[data-note-del]');
     if (noteDel) { S.removeNote(noteDel.dataset.noteDel); render(); return; }
+
+    /* Calendrier : export .ics + suppression d'un événement */
+    if (e.target.closest('[data-cal-ics]')) { download('maestria-calendrier.ics', S.exportCalendarICS(), 'text/calendar'); toast('Calendrier exporté (.ics).'); return; }
+    const calDel=e.target.closest('[data-cal-del]');
+    if (calDel) { S.removeCalendarEvent(calDel.dataset.calDel); render(); return; }
 
     /* Démarrer une leçon : inscrire des cartes dans le SRS */
     const lesson=e.target.closest('[data-lesson]');
@@ -1532,6 +1637,13 @@
       const r=S.addNote(text);
       afterMutation(r); toast(r.xp>0?`Note ajoutée · +${r.xp} XP`:'Note ajoutée.');
       e.target.reset(); render(); return;
+    }
+    if (e.target.id==='cal-event-form') {
+      const fd=new FormData(e.target);
+      const date=fd.get('date'), title=(fd.get('title')||'').trim(), note=(fd.get('note')||'').trim(), category=fd.get('category');
+      if (!date || !title) { render(); return; }
+      S.addCalendarEvent(date, title, note, category);
+      toast('Ajouté au calendrier.'); e.target.reset(); render(); return;
     }
   });
 

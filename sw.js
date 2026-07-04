@@ -1,5 +1,5 @@
 /* Maestria — service worker : cache app-shell pour usage hors-ligne. */
-const CACHE = 'maestria-v10';
+const CACHE = 'maestria-v11';
 const ASSETS = [
   './', './index.html',
   './css/styles.css',

@@ -182,5 +182,13 @@ const BADGES = [
     cond: (s, h) => h.totalSessions(s) >= 100 },
 ];
 
-window.MAESTRIA_CONFIG = { DOMAINS, DISCIPLINES, CEFR_LEVELS, SRS_INTERVALS, BADGES,
+const CAL_CATEGORIES = [
+  { id: 'perso',    label: 'Perso',            color: '#a78bfa', icon: '✨' },
+  { id: 'stage',    label: 'Stage / Travail',  color: '#0ea5e9', icon: '💼' },
+  { id: 'anniv',    label: 'Anniversaire',     color: '#f59e0b', icon: '🎂' },
+  { id: 'echeance', label: 'Échéance',         color: '#ef4444', icon: '⏰' },
+  { id: 'sante',    label: 'Santé',            color: '#10b981', icon: '💊' },
+];
+
+window.MAESTRIA_CONFIG = { DOMAINS, DISCIPLINES, CEFR_LEVELS, SRS_INTERVALS, BADGES, CAL_CATEGORIES,
   DAILY_HABITS, NEW_CARDS_PER_DAY, HARDNESS_RAMP_DAYS };

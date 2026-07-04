@@ -82,7 +82,7 @@
       disciplines, journal:[], badges:[], log:[], stats:{ reviewsDone:0 },
       daily:{}, quests:defaultQuests(), readingLog:[], opinions:[], diary:[],
       city:{ buildings:{} }, courseProgress:{ lessons:{} },
-      earTraining:{ attempts:{} }, improJournal:[], notes:[] };
+      earTraining:{ attempts:{} }, improJournal:[], notes:[], calendar:{ events:[] } };
   }
 
   /* ---------- Persistance ---------- */
@@ -110,6 +110,8 @@
       if (!s.earTraining.attempts) s.earTraining.attempts = {};
       if (!s.improJournal) s.improJournal = [];
       if (!s.notes) s.notes = [];
+      if (!s.calendar) s.calendar = { events:[] };
+      if (!s.calendar.events) s.calendar.events = [];
       return s;
     } catch { return freshState(); }
   }
@@ -416,6 +418,33 @@
   }
   function removeNote(id) { state.notes = (state.notes || []).filter((n) => n.id !== id); save(); }
 
+  /* ---------- Calendrier (événements perso, toute l'année) ---------- */
+  function eventsForDate(date) { return ((state.calendar && state.calendar.events) || []).filter((e) => e.date === date); }
+  function eventsInRange(fromDate, toDateIncl) {
+    return ((state.calendar && state.calendar.events) || []).filter((e) => e.date >= fromDate && e.date <= toDateIncl).sort((a, b) => a.date.localeCompare(b.date));
+  }
+  function addCalendarEvent(date, title, note, category) {
+    state.calendar = state.calendar || { events:[] };
+    state.calendar.events.push({ id:'cal_'+Date.now()+'_'+Math.random().toString(36).slice(2,6), date, title, note:note||'', category:category||'perso' });
+    save();
+  }
+  function removeCalendarEvent(id) { state.calendar.events = (state.calendar.events || []).filter((e) => e.id !== id); save(); }
+  function exportCalendarICS() {
+    const pad = (n) => String(n).padStart(2, '0');
+    const stamp = (() => { const d = new Date(); return `${d.getUTCFullYear()}${pad(d.getUTCMonth()+1)}${pad(d.getUTCDate())}T${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}${pad(d.getUTCSeconds())}Z`; })();
+    const events = (state.calendar && state.calendar.events) || [];
+    const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Maestria//Calendrier//FR', 'CALSCALE:GREGORIAN'];
+    events.forEach((e) => {
+      const ymd = e.date.replace(/-/g, '');
+      lines.push('BEGIN:VEVENT', `UID:maestria-cal-${e.id}@local`, `DTSTAMP:${stamp}`,
+        `DTSTART;VALUE=DATE:${ymd}`, `DTEND;VALUE=DATE:${ymd}`, `SUMMARY:${e.title.replace(/\n/g, ' ')}`);
+      if (e.note) lines.push(`DESCRIPTION:${e.note.replace(/\n/g, '\\n')}`);
+      lines.push('BEGIN:VALARM', 'TRIGGER:PT0S', 'ACTION:DISPLAY', 'DESCRIPTION:Rappel Maestria', 'END:VALARM', 'END:VEVENT');
+    });
+    lines.push('END:VCALENDAR');
+    return lines.join('\r\n');
+  }
+
   window.Store = {
     get state() { return state; },
     Dates, H,
@@ -428,6 +457,7 @@
     City, lessonDone, markLessonDone,
     earStats, recordEarAttempt, addImproEntry,
     notesForDate, notesDays, addNote, removeNote,
+    eventsForDate, eventsInRange, addCalendarEvent, removeCalendarEvent, exportCalendarICS,
     exportJSON, importJSON,
     /* Profils */
     getProfiles, createProfile, deleteProfile, switchProfile,
