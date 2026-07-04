@@ -717,6 +717,7 @@
       <header class="dhead"><button class="back" data-go="#/">‹</button>
         <div class="dhead-main"><span class="dicon big">📔</span>
           <div><h1>Journal</h1><span class="muted small">${written} entrée${written > 1 ? 's' : ''} · une par jour</span></div></div></header>
+      <button class="card cta" data-go="#/notes">📒 Mes notes — cahier du jour →</button>
       <button class="btn block" data-go="#/diary/bilan">📅 Bilan des 14 derniers jours →</button>
       <form id="diary-form" class="stack">
         <h2 class="section">${todayEntry ? 'Modifier' : 'Aujourd\'hui'} · ${esc(Dates.label(today))}</h2>
@@ -743,6 +744,60 @@
           <div><h1>Bilan · 14 jours</h1><span class="muted small">${entries.length}/14 jours écrits</span></div></div></header>
       <div class="card">Relis d'un bloc, repère les motifs et les idées récurrentes.${entries.length ? ` Pour une <b>vraie synthèse</b>, copie-colle-moi ce bilan en conversation — je n'ai pas accès à tes données locales.` : ''}</div>
       ${block}`;
+  }
+
+  /* Illustration d'un cahier ouvert, page de droite datée — pour les Notes. */
+  function notebookSVG(dateLabel) {
+    const W = 300, H = 158;
+    let s = `<svg viewBox="0 0 ${W} ${H}" width="100%" style="max-width:420px" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Cahier — ${esc(dateLabel)}">`;
+    s += `<rect x="8" y="10" width="138" height="138" rx="6" fill="#ede4cc"/>`;
+    s += `<rect x="154" y="10" width="138" height="138" rx="6" fill="#f2ead9"/>`;
+    s += `<rect x="146" y="10" width="8" height="138" fill="#1b1e36" opacity="0.22"/>`;
+    for (let i = 0; i < 9; i++) { const y = 20 + i * 15; s += `<circle cx="150" cy="${y}" r="2" fill="#8a8fb5"/>`; }
+    s += `<line x1="24" y1="16" x2="24" y2="142" stroke="#c76b6b" stroke-width="1" opacity="0.45"/>`;
+    s += `<line x1="170" y1="46" x2="170" y2="142" stroke="#c76b6b" stroke-width="1" opacity="0.45"/>`;
+    for (let y = 40; y <= 136; y += 15) s += `<line x1="16" y1="${y}" x2="140" y2="${y}" stroke="#c9bd9a" stroke-width="1"/>`;
+    for (let y = 56; y <= 136; y += 15) s += `<line x1="162" y1="${y}" x2="286" y2="${y}" stroke="#c9bd9a" stroke-width="1"/>`;
+    s += `<text x="223" y="30" font-size="13" text-anchor="middle" font-weight="700" fill="#3a3020">${esc(dateLabel)}</text>`;
+    s += `<line x1="185" y1="35" x2="261" y2="35" stroke="#3a3020" stroke-width="1" opacity="0.5"/>`;
+    return s + `</svg>`;
+  }
+
+  /* ======================================================
+     NOTES (cahier au fil de la journée + sommaire)
+     ====================================================== */
+  function viewNotes(dateParam) {
+    nav.hidden = false;
+    const today = Dates.today(), date = dateParam || today, isToday = date === today;
+    const notes = S.notesForDate(date), days = S.notesDays();
+
+    const notesHTML = notes.length ? notes.map((n) => `
+      <div class="card note-entry"><div class="note-head"><span class="muted small">${esc(n.time)}</span>
+        <button class="note-del" data-note-del="${n.id}" aria-label="Supprimer">✕</button></div>
+        <p>${esc(n.text)}</p></div>`).join('')
+      : `<div class="card empty">Aucune note ${isToday ? "pour aujourd'hui" : 'ce jour-là'}.</div>`;
+
+    const sommaireHTML = days.length ? days.map((d) => {
+      const n = S.notesForDate(d).length;
+      return `<button class="fiche-row" data-go="#/notes/${d}">
+        <span class="fr-ic">📄</span>
+        <div class="cm-main"><b>${esc(Dates.label(d))}</b><span class="muted small">${n} note${n > 1 ? 's' : ''}</span></div></button>`;
+    }).join('') : `<div class="card empty">Rien encore. Écris ta première note.</div>`;
+
+    app.innerHTML = `
+      <header class="dhead"><button class="back" data-go="#/diary">‹</button>
+        <div class="dhead-main"><span class="dicon big">📒</span>
+          <div><h1>${isToday ? 'Mes notes' : esc(Dates.label(date))}</h1><span class="muted small">${isToday ? 'Cahier du jour' : 'Cahier de ce jour'}</span></div></div></header>
+      <div class="card notebook-scene">${notebookSVG(Dates.label(date))}</div>
+      ${isToday ? `
+      <form id="note-form" class="stack">
+        <textarea name="text" rows="3" placeholder="Note quelque chose, là, maintenant…"></textarea>
+        <button class="btn primary block" type="submit">Ajouter au cahier</button>
+      </form>` : ''}
+      ${notesHTML}
+      ${!isToday ? `<button class="btn block" data-go="#/notes">‹ Retour à aujourd'hui</button>` : ''}
+      <h2 class="section">📑 Sommaire</h2>
+      ${sommaireHTML}`;
   }
 
   /* ======================================================
@@ -1206,6 +1261,7 @@
     else if (root==='learn') viewLearn();
     else if (root==='read')  { if (parts[1]==='opinions') viewOpinions(); else viewReading(); }
     else if (root==='diary') { if (parts[1]==='bilan') viewBilan(); else viewDiary(); }
+    else if (root==='notes') viewNotes(parts[1]);
     else if (root==='city')  viewCity();
     else if (root==='course') viewCourse(parts[1]);
     else if (root==='lesson') viewLesson(parts[1]);
@@ -1308,6 +1364,10 @@
     }
     if (e.target.closest('[data-ear-next]')) { earExercise=null; render(); return; }
     if (e.target.closest('[data-ear-switch]')) { earMode=null; earExercise=null; render(); return; }
+
+    /* Notes : supprimer une entrée du cahier */
+    const noteDel=e.target.closest('[data-note-del]');
+    if (noteDel) { S.removeNote(noteDel.dataset.noteDel); render(); return; }
 
     /* Démarrer une leçon : inscrire des cartes dans le SRS */
     const lesson=e.target.closest('[data-lesson]');
@@ -1464,6 +1524,14 @@
       S.addImproEntry(null, style, note);
       const xp=Math.round(5*H.streakMultiplier()); const r=S.addXp('guitare', xp, 'impro');
       afterMutation(r); toast(`Noté · +${xp} XP`); e.target.reset(); render(); return;
+    }
+    if (e.target.id==='note-form') {
+      const fd=new FormData(e.target);
+      const text=(fd.get('text')||'').trim();
+      if (!text) { render(); return; }
+      const r=S.addNote(text);
+      afterMutation(r); toast(r.xp>0?`Note ajoutée · +${r.xp} XP`:'Note ajoutée.');
+      e.target.reset(); render(); return;
     }
   });
 

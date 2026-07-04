@@ -337,6 +337,15 @@ ul { list-style: none; padding: 0; margin: 0; }
 .ear-play p { margin: 0 0 10px; font-weight: 500; }
 .ear-choices .ear-choice:first-child { margin-top: 14px; }
 
+/* ---------- Notes (cahier) ---------- */
+.notebook-scene { padding: 0; overflow: hidden; text-align: center; }
+.notebook-scene svg { display: block; margin: 0 auto; }
+.note-entry { padding: 11px 13px; }
+.note-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.note-del { background: none; border: none; color: var(--muted); cursor: pointer; font-size: .9rem; padding: 2px 6px; }
+.note-del:hover { color: #ef4444; }
+.note-entry p { margin: 0; white-space: pre-wrap; }
+
 /* ---------- Impro Coach ---------- */
 .impro-tip.locked { opacity: .6; }
 .impro-tips-list { margin: 10px 0 8px; padding-left: 18px; }

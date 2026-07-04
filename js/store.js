@@ -82,7 +82,7 @@
       disciplines, journal:[], badges:[], log:[], stats:{ reviewsDone:0 },
       daily:{}, quests:defaultQuests(), readingLog:[], opinions:[], diary:[],
       city:{ buildings:{} }, courseProgress:{ lessons:{} },
-      earTraining:{ attempts:{} }, improJournal:[] };
+      earTraining:{ attempts:{} }, improJournal:[], notes:[] };
   }
 
   /* ---------- Persistance ---------- */
@@ -109,6 +109,7 @@
       if (!s.earTraining) s.earTraining = { attempts:{} };
       if (!s.earTraining.attempts) s.earTraining.attempts = {};
       if (!s.improJournal) s.improJournal = [];
+      if (!s.notes) s.notes = [];
       return s;
     } catch { return freshState(); }
   }
@@ -398,6 +399,23 @@
     save();
   }
 
+  /* ---------- Notes (cahier au fil de la journée, plusieurs entrées/jour) ---------- */
+  function notesForDate(date) { return (state.notes || []).filter((n) => n.date === date).sort((a, b) => a.time.localeCompare(b.time)); }
+  function notesDays() { const set = new Set((state.notes || []).map((n) => n.date)); return [...set].sort().reverse(); }
+  function addNote(text) {
+    state.notes = state.notes || [];
+    const today = Dates.today();
+    const firstToday = !state.notes.some((n) => n.date === today);
+    const time = new Date().toTimeString().slice(0, 5);
+    const note = { id: 'note_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), date: today, time, text };
+    state.notes.push(note);
+    let xp = 0, mutRes = { leveledUp: false, newLevel: null };
+    if (firstToday) { xp = Math.round(3 * H.streakMultiplier()); mutRes = addXp('lettres', xp, 'notes'); } // save inclus
+    else save();
+    return { note, xp, leveledUp: mutRes.leveledUp, newLevel: mutRes.newLevel };
+  }
+  function removeNote(id) { state.notes = (state.notes || []).filter((n) => n.id !== id); save(); }
+
   window.Store = {
     get state() { return state; },
     Dates, H,
@@ -409,6 +427,7 @@
     refreshBadges, save, reset,
     City, lessonDone, markLessonDone,
     earStats, recordEarAttempt, addImproEntry,
+    notesForDate, notesDays, addNote, removeNote,
     exportJSON, importJSON,
     /* Profils */
     getProfiles, createProfile, deleteProfile, switchProfile,
