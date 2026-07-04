@@ -18,6 +18,7 @@
   let lastRenderDay = '';  // jour (YYYY-MM-DD) du dernier rendu — pour détecter le passage à un nouveau jour
   let studyDeckId = null, studyIdx = 0, studyFlip = false;
   let earMode = null, earExercise = null, earAnswered = false, earChosen = null, earSessionScore = { correct:0, total:0 };
+  let exerciseQueue = null, exerciseIdx = 0, exerciseRevealed = false, exerciseGraded = false, exerciseMode = 'today', exerciseLastQuality = null;
 
   /* Mélange un tableau (copie, Fisher-Yates) — pour l'entraînement libre. */
   function shuffle(arr) {
@@ -899,6 +900,71 @@
       ${eventsHTML}`;
   }
 
+  /* Bascule Cartes ↔ Exercices, affichée en haut de l'écran Réviser. */
+  function reviewModeSwitchHTML(active) {
+    return `<div class="row seg-switch">
+      <button class="seg-btn ${active === 'cards' ? 'active' : ''}" data-go="#/review">🧠 Cartes</button>
+      <button class="seg-btn ${active === 'exercises' ? 'active' : ''}" data-go="#/review/exercises">🧮 Exercices</button>
+    </div>`;
+  }
+
+  /* ======================================================
+     EXERCICES (réflexes & intuition — noté en 4 paliers, pas binaire)
+     ====================================================== */
+  function exerciseOfToday(disciplineId) {
+    const list = (window.MAESTRIA_EXERCISES.EXERCISES[disciplineId]) || [];
+    if (!list.length) return null;
+    const dayIdx = Number(Dates.today().replace(/-/g, ''));
+    return list[dayIdx % list.length];
+  }
+
+  function viewExercises(disciplineId) {
+    nav.hidden = false;
+    if (!disciplineId) {
+      exerciseQueue = null;
+      app.innerHTML = `
+        <header class="dhead"><button class="back" data-go="#/">‹</button>
+          <div class="dhead-main"><span class="dicon big">🧮</span>
+            <div><h1>Exercices</h1><span class="muted small">Construis tes réflexes, pas juste ta mémoire</span></div></div></header>
+        ${reviewModeSwitchHTML('exercises')}
+        <button class="card cta" data-go="#/review/exercises/economie">💹 Finance — exercice du jour →</button>
+        <button class="btn block" data-go="#/review/exercises/espagnol">🇪🇸 Espagnol — exercice du jour →</button>`;
+      return;
+    }
+
+    const { EXERCISES, QUALITY_LEVELS } = window.MAESTRIA_EXERCISES;
+    const list = EXERCISES[disciplineId] || [];
+    const cfg = DISCIPLINES[disciplineId];
+    if (!list.length) { app.innerHTML = `<div class="card empty">Aucun exercice pour l'instant.</div>`; return; }
+
+    if (exerciseQueue === null) {
+      const doneLog = S.exerciseDoneToday(disciplineId);
+      const today = exerciseOfToday(disciplineId);
+      exerciseMode = 'today'; exerciseQueue = [today.id]; exerciseIdx = 0;
+      exerciseRevealed = !!doneLog; exerciseGraded = !!doneLog; exerciseLastQuality = doneLog ? doneLog.quality : null;
+    }
+
+    const ex = list.find((x) => x.id === exerciseQueue[exerciseIdx]);
+    if (!ex) { exerciseQueue = null; render(); return; }
+
+    const qualityHTML = QUALITY_LEVELS.map((q) => `<button class="btn ${exerciseGraded && exerciseLastQuality === q.v ? 'primary' : ''}" ${exerciseGraded ? 'disabled' : ''} data-ex-quality="${q.v}">${q.label}</button>`).join('');
+
+    app.innerHTML = `
+      <header class="dhead"><button class="back" data-go="#/review/exercises">‹</button>
+        <div class="dhead-main"><span class="dicon big">${cfg.icon}</span>
+          <div><h1>${esc(cfg.name)}</h1><span class="muted small">${exerciseMode === 'today' ? "Exercice du jour" : 'Entraînement libre'}${ex.calc ? ' · 🧮 calcul' : ''}</span></div></div></header>
+      ${reviewModeSwitchHTML('exercises')}
+      <div class="card exercise-card">
+        <p class="exercise-prompt">${esc(ex.prompt)}</p>
+        ${!exerciseRevealed ? `<button class="btn primary block" data-reveal-exercise>Révéler la correction</button>` : `
+          <div class="exercise-solution"><b>Correction</b><p>${esc(ex.solution)}</p></div>
+          <p class="muted small">Comment évalues-tu ta réponse ?</p>
+          <div class="row quality-row">${qualityHTML}</div>`}
+      </div>
+      ${exerciseGraded ? `<button class="card cta" data-ex-next="${disciplineId}">${exerciseMode === 'today' ? '🎯 Continuer en entraînement libre' : '→ Exercice suivant'} →</button>` : ''}
+      <button class="btn block" data-go="#/review/exercises">‹ Changer de discipline</button>`;
+  }
+
   /* ======================================================
      RÉVISIONS
      ====================================================== */
@@ -927,6 +993,7 @@
       app.innerHTML = `
         <header class="dhead"><button class="back" data-go="#/">‹</button>
           <div class="dhead-main"><span class="dicon big">🧠</span><div><h1>Révisions</h1></div></div></header>
+        ${reviewModeSwitchHTML('cards')}
         <div class="card empty">✅ Rien à réviser pour l'instant.<br>
           <span class="muted small">${upcoming} carte(s) au total, programmées plus tard.</span></div>
         ${upcoming > 0 ? `<button class="card cta" data-go="#/review/free">🎯 Entraînement libre (réviser sans pression) →</button>` : ''}
@@ -983,6 +1050,7 @@
         <div class="dhead-main"><span class="dicon big">🧠</span>
           <div><h1>Révisions</h1><span class="muted small">Carte ${reviewIdx+1} / ${total}</span></div></div>
       </header>
+      ${reviewModeSwitchHTML('cards')}
       <div class="xpbar slim"><div class="xpbar-fill" style="width:${progress}%;background:#a78bfa"></div></div>
 
       <div class="card flashcard">
@@ -1354,6 +1422,7 @@
     /* Quitter une session réinitialise son état */
     if (root!=='review') reviewQueue = null;
     if (root!=='study')  studyDeckId = null;
+    if (!(root==='review' && parts[1]==='exercises')) exerciseQueue = null;
 
     if (root==='')          viewToday();
     else if (root==='map')  viewDashboard();
@@ -1371,7 +1440,7 @@
     else if (root==='impro')  viewImproCoach();
     else if (root==='study') viewStudy(parts[1]);
     else if (root==='d')    viewDiscipline(parts[1]);
-    else if (root==='review') viewReview(parts[1]);
+    else if (root==='review') { if (parts[1]==='exercises') viewExercises(parts[2]); else viewReview(parts[1]); }
     else if (root==='tools')  viewTools();
     else if (root==='settings') viewSettings();
     else viewToday();
@@ -1464,6 +1533,33 @@
     }
     if (e.target.closest('[data-ear-next]')) { earExercise=null; render(); return; }
     if (e.target.closest('[data-ear-switch]')) { earMode=null; earExercise=null; render(); return; }
+
+    /* Exercices : révéler la correction, noter (4 paliers), enchaîner */
+    if (e.target.closest('[data-reveal-exercise]')) { exerciseRevealed=true; render(); return; }
+    const exQuality=e.target.closest('[data-ex-quality]');
+    if (exQuality && !exerciseGraded) {
+      const disciplineId=location.hash.split('/')[3];
+      const list=window.MAESTRIA_EXERCISES.EXERCISES[disciplineId]||[];
+      const ex=list.find((x)=>x.id===exerciseQueue[exerciseIdx]);
+      const quality=Number(exQuality.dataset.exQuality);
+      const q=window.MAESTRIA_EXERCISES.QUALITY_LEVELS.find((x)=>x.v===quality);
+      S.recordExerciseAttempt(ex.id, disciplineId, quality, exerciseMode==='today');
+      exerciseGraded=true; exerciseLastQuality=quality;
+      const xp=Math.round((q.xp||0)*H.streakMultiplier());
+      if (xp>0) { const r=S.addXp(disciplineId, xp, 'exercise'); afterMutation(r); toast(`${q.label} · +${xp} XP`); }
+      else toast(q.label);
+      render(); return;
+    }
+    const exNext=e.target.closest('[data-ex-next]');
+    if (exNext) {
+      const disciplineId=exNext.dataset.exNext;
+      const list=window.MAESTRIA_EXERCISES.EXERCISES[disciplineId]||[];
+      const stats=(id)=>S.exerciseStats(id);
+      const toWeighted=(id)=>{ const st=stats(id); return { correct:st.sumQuality, total:st.count*3 }; };
+      const picked=window.EarTraining.pickWeighted(list, (it)=>toWeighted(it.id));
+      exerciseMode='free'; exerciseQueue=[picked.id]; exerciseIdx=0; exerciseRevealed=false; exerciseGraded=false; exerciseLastQuality=null;
+      render(); return;
+    }
 
     /* Notes : supprimer une entrée du cahier */
     const noteDel=e.target.closest('[data-note-del]');

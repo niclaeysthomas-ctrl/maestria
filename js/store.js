@@ -82,7 +82,8 @@
       disciplines, journal:[], badges:[], log:[], stats:{ reviewsDone:0 },
       daily:{}, quests:defaultQuests(), readingLog:[], opinions:[], diary:[],
       city:{ buildings:{} }, courseProgress:{ lessons:{} },
-      earTraining:{ attempts:{} }, improJournal:[], notes:[], calendar:{ events:[] } };
+      earTraining:{ attempts:{} }, improJournal:[], notes:[], calendar:{ events:[] },
+      exercises:{ stats:{}, dailyLog:[] } };
   }
 
   /* ---------- Persistance ---------- */
@@ -112,6 +113,9 @@
       if (!s.notes) s.notes = [];
       if (!s.calendar) s.calendar = { events:[] };
       if (!s.calendar.events) s.calendar.events = [];
+      if (!s.exercises) s.exercises = { stats:{}, dailyLog:[] };
+      if (!s.exercises.stats) s.exercises.stats = {};
+      if (!s.exercises.dailyLog) s.exercises.dailyLog = [];
       return s;
     } catch { return freshState(); }
   }
@@ -445,6 +449,21 @@
     return lines.join('\r\n');
   }
 
+  /* ---------- Exercices (réflexes & intuition — notés en 4 paliers de qualité) ---------- */
+  function exerciseStats(id) { return (state.exercises && state.exercises.stats[id]) || { count:0, sumQuality:0 }; }
+  function exerciseDoneToday(disciplineId) {
+    const t = Dates.today();
+    return ((state.exercises && state.exercises.dailyLog) || []).find((l) => l.date === t && l.disciplineId === disciplineId);
+  }
+  function recordExerciseAttempt(exerciseId, disciplineId, quality, isDaily) {
+    if (!state.exercises) state.exercises = { stats:{}, dailyLog:[] };
+    if (!state.exercises.stats[exerciseId]) state.exercises.stats[exerciseId] = { count:0, sumQuality:0 };
+    const st = state.exercises.stats[exerciseId];
+    st.count++; st.sumQuality += quality;
+    if (isDaily) state.exercises.dailyLog.push({ date: Dates.today(), disciplineId, exerciseId, quality });
+    save();
+  }
+
   window.Store = {
     get state() { return state; },
     Dates, H,
@@ -458,6 +477,7 @@
     earStats, recordEarAttempt, addImproEntry,
     notesForDate, notesDays, addNote, removeNote,
     eventsForDate, eventsInRange, addCalendarEvent, removeCalendarEvent, exportCalendarICS,
+    exerciseStats, exerciseDoneToday, recordExerciseAttempt,
     exportJSON, importJSON,
     /* Profils */
     getProfiles, createProfile, deleteProfile, switchProfile,
