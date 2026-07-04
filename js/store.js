@@ -81,7 +81,8 @@
       settings:{ name:'', coach:'adaptatif', startDate:Dates.today() },
       disciplines, journal:[], badges:[], log:[], stats:{ reviewsDone:0 },
       daily:{}, quests:defaultQuests(), readingLog:[], opinions:[], diary:[],
-      city:{ buildings:{} }, courseProgress:{ lessons:{} } };
+      city:{ buildings:{} }, courseProgress:{ lessons:{} },
+      earTraining:{ attempts:{} }, improJournal:[] };
   }
 
   /* ---------- Persistance ---------- */
@@ -105,6 +106,9 @@
       if (!s.city.buildings) s.city.buildings = {};
       if (!s.courseProgress) s.courseProgress = { lessons:{} };
       if (!s.courseProgress.lessons) s.courseProgress.lessons = {};
+      if (!s.earTraining) s.earTraining = { attempts:{} };
+      if (!s.earTraining.attempts) s.earTraining.attempts = {};
+      if (!s.improJournal) s.improJournal = [];
       return s;
     } catch { return freshState(); }
   }
@@ -377,6 +381,23 @@
     return true;
   }
 
+  /* ---------- Oreille musicale (ear training) ---------- */
+  function earStats(key) { return (state.earTraining && state.earTraining.attempts[key]) || { correct:0, total:0 }; }
+  function recordEarAttempt(key, correct) {
+    if (!state.earTraining) state.earTraining = { attempts:{} };
+    if (!state.earTraining.attempts[key]) state.earTraining.attempts[key] = { correct:0, total:0 };
+    const st = state.earTraining.attempts[key];
+    st.total++; if (correct) st.correct++;
+    save();
+  }
+
+  /* ---------- Impro Coach (journal d'impro) ---------- */
+  function addImproEntry(scaleId, style, note) {
+    state.improJournal = state.improJournal || [];
+    state.improJournal.push({ date: Dates.today(), scaleId, style, note });
+    save();
+  }
+
   window.Store = {
     get state() { return state; },
     Dates, H,
@@ -387,6 +408,7 @@
     addSession, addXp, setCefr, addGoal, toggleGoal, removeGoal,
     refreshBadges, save, reset,
     City, lessonDone, markLessonDone,
+    earStats, recordEarAttempt, addImproEntry,
     exportJSON, importJSON,
     /* Profils */
     getProfiles, createProfile, deleteProfile, switchProfile,

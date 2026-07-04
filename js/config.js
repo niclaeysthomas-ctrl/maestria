@@ -25,6 +25,19 @@ const DISCIPLINES = {
       { title: 'Morceau du répertoire',        desc: 'Joue ton morceau du début à la fin sans t\'arrêter, puis isole les passages difficiles.', skills: ['Répertoire'],       durationMin: 20 },
     ],
   },
+  piano: {
+    id: 'piano', name: 'Piano', domain: 'art', icon: '🎹', type: 'practice',
+    skills: ['Gammes', 'Accords', 'Voicings', 'Main gauche', 'Improvisation', 'Répertoire'],
+    metrics: [],
+    features: {},
+    suggestions: [
+      { title: 'Gamme majeure, 2 mains',        desc: 'Monte/descends la gamme de Do sur 2 octaves, mains ensemble. Doigté propre avant vitesse.', skills: ['Gammes'],        durationMin: 15 },
+      { title: 'Enchaînement d\'accords',        desc: 'Cmaj7 → Am7 → Dm7 → G7 en boucle, main gauche. Fluidité d\'abord, tempo ensuite.', skills: ['Accords'],       durationMin: 10 },
+      { title: 'Voicings main gauche',           desc: 'Joue un enchaînement ii-V-I dans 3 tonalités avec des shell voicings (3e+7e).', skills: ['Voicings'],       durationMin: 15 },
+      { title: 'Impro libre sur backing track',  desc: '20 min sur un backing track blues/jazz. Pas de pression, juste jouer et écouter.', skills: ['Improvisation'], durationMin: 20 },
+      { title: 'Morceau du répertoire',          desc: 'Joue ton morceau du début à la fin sans t\'arrêter, puis isole les passages difficiles.', skills: ['Répertoire'],    durationMin: 20 },
+    ],
+  },
   echecs: {
     id: 'echecs', name: 'Échecs', domain: 'esprit', icon: '♟️', type: 'practice',
     skills: ['Ouvertures', 'Tactique', 'Finales', 'Milieu de jeu', 'Analyse'],

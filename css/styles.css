@@ -331,3 +331,14 @@ ul { list-style: none; padding: 0; margin: 0; }
 .fiche-sec p { margin: 0; line-height: 1.55; }
 .fiche-intro { color: var(--muted); font-style: italic; margin: 0 0 6px; }
 @media print { #nav, .back, [data-print] { display: none !important; } .card { break-inside: avoid; } }
+
+/* ---------- Oreille musicale ---------- */
+.ear-play { text-align: center; }
+.ear-play p { margin: 0 0 10px; font-weight: 500; }
+.ear-choices .ear-choice:first-child { margin-top: 14px; }
+
+/* ---------- Impro Coach ---------- */
+.impro-tip.locked { opacity: .6; }
+.impro-tips-list { margin: 10px 0 8px; padding-left: 18px; }
+.impro-tips-list li { margin: 6px 0; line-height: 1.5; }
+.impro-styles { display: flex; flex-wrap: wrap; gap: 6px; }

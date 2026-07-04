@@ -5,6 +5,7 @@
   const { DOMAINS, DISCIPLINES, CEFR_LEVELS, DAILY_HABITS, NEW_CARDS_PER_DAY } = window.MAESTRIA_CONFIG;
   const { DECKS, READINGS } = window.MAESTRIA_CONTENT;
   const { COURSES } = window.MAESTRIA_COURSES;
+  const { IMPRO_TIPS } = window.MAESTRIA_IMPRO;
   const S = window.Store;
   const { Dates, H } = S;
 
@@ -16,6 +17,7 @@
   let reviewXpEarned = 0;  // XP réellement gagnée pendant la session de dues en cours
   let lastRenderDay = '';  // jour (YYYY-MM-DD) du dernier rendu — pour détecter le passage à un nouveau jour
   let studyDeckId = null, studyIdx = 0, studyFlip = false;
+  let earMode = null, earExercise = null, earAnswered = false, earChosen = null, earSessionScore = { correct:0, total:0 };
 
   /* Mélange un tableau (copie, Fisher-Yates) — pour l'entraînement libre. */
   function shuffle(arr) {
@@ -230,6 +232,12 @@
 
       <button class="card cta" data-go="#/city">🏰 Ta Cité ${S.City.pierresAvailable() > 0 ? `· <span class="badge">${S.City.pierresAvailable()} 🪨 à dépenser</span>` : `<span class="muted small">· monte de niveau pour bâtir</span>`} →</button>
 
+      <h2 class="section">🎵 Musique</h2>
+      <div class="row">
+        <button class="btn block" data-go="#/ear">👂 Oreille musicale</button>
+        <button class="btn block" data-go="#/impro">🎤 Impro Coach</button>
+      </div>
+
       <h2 class="section">📖 Leçon du jour</h2>
       <div class="card lessons">${lessonsHTML}</div>
 
@@ -438,6 +446,7 @@
       ${xpBar(d.xp,dom.color)}
 
       ${COURSES[id]?`<button class="card cta" data-go="#/course/${id}">🎸 ${esc(COURSES[id].title)} — le cours →</button>`:''}
+      ${(id==='guitare'||id==='piano')?`<div class="row"><button class="btn block" data-go="#/ear">👂 Oreille musicale</button><button class="btn block" data-go="#/impro">🎤 Impro Coach</button></div>`:''}
       ${cfg.features&&cfg.features.metronome?`<button class="card cta" data-go="#/tools">🎼 Ouvrir le métronome →</button>`:''}
       ${cfg.features&&cfg.features.decks?`<button class="card cta" data-go="#/learn">📖 Decks de cartes (façon Anki) →</button>`:''}
 
@@ -995,6 +1004,33 @@
     return s + `</svg>`;
   }
 
+  /* Correspondance semitone (0=do … 12=do octave sup) → position sur le clavier dessiné. */
+  const KEYBOARD_MAP = [
+    { white: 0 }, { black: true, after: 0 }, { white: 1 }, { black: true, after: 1 },
+    { white: 2 }, { white: 3 }, { black: true, after: 3 }, { white: 4 }, { black: true, after: 4 },
+    { white: 5 }, { black: true, after: 5 }, { white: 6 }, { white: 7 },
+  ];
+  /* Diagramme de clavier en SVG : 1 octave + la note d'octave supérieure, touches + doigtés/notes marqués. */
+  function keyboardSVG(d) {
+    if (!d) return '';
+    const ww = 40, wh = 118, bw = 24, bh = 74, mL = 10, mT = 10, whites = 8;
+    const W = mL * 2 + whites * ww, H = mT + wh + 12;
+    let s = `<svg viewBox="0 0 ${W} ${H}" width="100%" style="max-width:${Math.round(W*1.05)}px" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Diagramme de clavier"><rect x="0" y="0" width="${W}" height="${H}" rx="8" fill="#141636"/>`;
+    for (let i = 0; i < whites; i++) { const x = mL + i * ww; s += `<rect x="${x}" y="${mT}" width="${ww}" height="${wh}" fill="#eef0fb" stroke="#2c3056" stroke-width="1" rx="3"/>`; }
+    for (let n = 0; n <= 12; n++) { const km = KEYBOARD_MAP[n]; if (km.black) { const x = mL + (km.after + 1) * ww - bw / 2; s += `<rect x="${x}" y="${mT}" width="${bw}" height="${bh}" fill="#161726" stroke="#0a0b16" stroke-width="1" rx="2"/>`; } }
+    (d.dots || []).forEach((dot) => {
+      const km = KEYBOARD_MAP[dot.note] || KEYBOARD_MAP[0], c = dot.root ? '#f59e0b' : '#a78bfa';
+      const x = km.black ? mL + (km.after + 1) * ww : mL + km.white * ww + ww / 2;
+      const y = km.black ? mT + bh * 0.62 : mT + wh * 0.78;
+      s += `<circle cx="${x}" cy="${y}" r="9" fill="${c}"/>`;
+      if (dot.label) s += `<text x="${x}" y="${y+4}" fill="#141636" font-size="10" text-anchor="middle" font-weight="700">${esc(dot.label)}</text>`;
+    });
+    return s + `</svg>`;
+  }
+
+  /* Route vers le bon générateur de diagramme selon l'instrument (défaut = manche, rétro-compatible). */
+  function diagramSVG(d) { if (!d) return ''; return d.type === 'keyboard' ? keyboardSVG(d) : fretboardSVG(d); }
+
   function viewCourse(courseId) {
     nav.hidden = false;
     const c = COURSES[courseId];
@@ -1034,7 +1070,7 @@
           <div><h1>${esc(lesson.title)}</h1><span class="muted small">${esc(module.title)}</span></div></div></header>
       <div class="card lesson-goal">🎯 ${esc(lesson.goal)}</div>
       <div class="card"><h3 class="lb">📖 Théorie</h3><p class="lesson-theory">${esc(lesson.theory)}</p>
-        ${lesson.diagram?`<div class="fretboard">${fretboardSVG(lesson.diagram)}</div>`:''}</div>
+        ${lesson.diagram?`<div class="fretboard">${diagramSVG(lesson.diagram)}</div>`:''}</div>
       ${lesson.tab?`<div class="card"><h3 class="lb">${esc(lesson.tabLabel||'🎸 Exercice')}</h3><pre class="tab">${esc(lesson.tab)}</pre></div>`:''}
       ${lesson.bpm?`<div class="card"><h3 class="lb">⏱️ Cible métronome</h3><p>Départ <b>${lesson.bpm.start} BPM</b> → objectif <b>${lesson.bpm.goal} BPM</b>. Propreté avant vitesse.</p>
         <button class="btn block primary" data-metro="${lesson.bpm.start}">⏱️ Régler le métronome à ${lesson.bpm.start} BPM →</button></div>`:''}
@@ -1076,9 +1112,84 @@
       <div class="card fiche">
         ${f.intro?`<p class="fiche-intro">${esc(f.intro)}</p>`:''}
         ${secs}
-        ${f.diagram?`<div class="fretboard">${fretboardSVG(f.diagram)}</div>`:''}
+        ${f.diagram?`<div class="fretboard">${diagramSVG(f.diagram)}</div>`:''}
       </div>
       <button class="btn block" data-print>🖨️ Imprimer / enregistrer en PDF</button>`;
+  }
+
+  /* ======================================================
+     OREILLE MUSICALE (ear training)
+     ====================================================== */
+  function viewEarTraining() {
+    nav.hidden = false;
+    const ET = window.EarTraining;
+    if (!earMode) {
+      app.innerHTML = `
+        <header class="dhead"><button class="back" data-go="#/">‹</button>
+          <div class="dhead-main"><span class="dicon big">👂</span>
+            <div><h1>Oreille musicale</h1><span class="muted small">Intervalles & accords, à l'oreille</span></div></div></header>
+        <button class="card cta" data-ear-mode="interval">🎵 Reconnaissance d'intervalles →</button>
+        <button class="card cta" data-ear-mode="chord">🎹 Reconnaissance d'accords →</button>`;
+      return;
+    }
+    if (!earExercise) {
+      earExercise = earMode === 'interval' ? ET.generateIntervalExercise() : ET.generateChordExercise();
+      earAnswered = false; earChosen = null;
+    }
+    const ex = earExercise, correctKey = String(ex.kind === 'interval' ? ex.correct.semitones : ex.correct.name);
+    const choicesHTML = ex.choices.map((c) => {
+      const k = String(ex.kind === 'interval' ? c.semitones : c.name);
+      let cls = '';
+      if (earAnswered) { if (k === correctKey) cls = 'good'; else if (k === earChosen) cls = 'bad'; }
+      return `<button class="btn block ear-choice ${cls}" ${earAnswered ? 'disabled' : ''} data-ear-answer="${esc(k)}">${esc(c.name)}</button>`;
+    }).join('');
+    app.innerHTML = `
+      <header class="dhead"><button class="back" data-go="#/">‹</button>
+        <div class="dhead-main"><span class="dicon big">👂</span>
+          <div><h1>Oreille musicale</h1><span class="muted small">${earSessionScore.correct}/${earSessionScore.total} cette session</span></div></div></header>
+      <div class="card ear-play">
+        <p>${ex.kind === 'interval' ? 'Quel intervalle entends-tu ?' : 'Quel accord entends-tu ?'}</p>
+        <button class="btn primary block" data-ear-play>🔊 Jouer</button>
+      </div>
+      <div class="ear-choices">${choicesHTML}</div>
+      ${earAnswered ? `<button class="card cta" data-ear-next>Suivant →</button>` : ''}
+      <button class="btn block" data-ear-switch>‹ Changer de mode</button>`;
+  }
+
+  /* ======================================================
+     IMPRO COACH (conseils pratiques + journal d'impro)
+     ====================================================== */
+  function viewImproCoach() {
+    nav.hidden = false;
+    const cards = IMPRO_TIPS.map((t) => {
+      const unlocked = S.lessonDone(t.scaleRef);
+      if (!unlocked) {
+        const f = findLesson(t.scaleRef);
+        return `<div class="card impro-tip locked"><div class="cm-head"><span class="cm-ic">🔒</span>
+          <div class="cm-main"><b>${esc(t.title)}</b><span class="muted small">Débloqué après : ${f ? esc(f.lesson.title) : ''}</span></div></div></div>`;
+      }
+      const tipsHTML = t.tips.map((x) => `<li>${esc(x)}</li>`).join('');
+      const stylesHTML = t.suggestedStyles.map((x) => `<span class="badge">${esc(x)}</span>`).join(' ');
+      return `<div class="card impro-tip">
+        <div class="cm-head"><span class="cm-ic">${t.icon}</span><div class="cm-main"><b>${esc(t.title)}</b><span class="muted small">${esc(t.when)}</span></div></div>
+        <ul class="impro-tips-list">${tipsHTML}</ul>
+        <div class="impro-styles">${stylesHTML}</div>
+      </div>`;
+    }).join('');
+    const journal = (S.state.improJournal || []).slice().reverse().slice(0, 5).map((e) => `
+      <div class="card diary-entry"><div class="muted small">${esc(Dates.label(e.date))}${e.style ? ' · ' + esc(e.style) : ''}</div><p>${esc(e.note)}</p></div>`).join('');
+    app.innerHTML = `
+      <header class="dhead"><button class="back" data-go="#/">‹</button>
+        <div class="dhead-main"><span class="dicon big">🎤</span>
+          <div><h1>Impro Coach</h1><span class="muted small">Conseils pratiques, débloqués au fil de tes gammes</span></div></div></header>
+      ${cards}
+      <h2 class="section">📓 Journal d'impro</h2>
+      <form id="impro-form" class="stack">
+        <input type="text" name="style" placeholder="Style / backing track (ex : blues en Mi)">
+        <textarea name="note" rows="3" placeholder="Qu'as-tu essayé ? Qu'est-ce qui a marché ?"></textarea>
+        <button class="btn primary block" type="submit">Ajouter au journal</button>
+      </form>
+      ${journal}`;
   }
 
   function render() {
@@ -1100,6 +1211,8 @@
     else if (root==='lesson') viewLesson(parts[1]);
     else if (root==='fiches') viewFiches();
     else if (root==='fiche')  viewFiche(parts[1]);
+    else if (root==='ear')    viewEarTraining();
+    else if (root==='impro')  viewImproCoach();
     else if (root==='study') viewStudy(parts[1]);
     else if (root==='d')    viewDiscipline(parts[1]);
     else if (root==='review') viewReview(parts[1]);
@@ -1178,6 +1291,23 @@
 
     /* Fiche : imprimer / PDF */
     if (e.target.closest('[data-print]')) { window.print(); return; }
+
+    /* Oreille musicale : choisir un mode, jouer, répondre, enchaîner */
+    const earModeBtn=e.target.closest('[data-ear-mode]');
+    if (earModeBtn) { earMode=earModeBtn.dataset.earMode; earExercise=null; earSessionScore={correct:0,total:0}; render(); return; }
+    if (e.target.closest('[data-ear-play]')) { window.EarTraining.playExercise(earExercise); return; }
+    const earAnswerBtn=e.target.closest('[data-ear-answer]');
+    if (earAnswerBtn && !earAnswered) {
+      earChosen=earAnswerBtn.dataset.earAnswer;
+      const correctKey=String(earExercise.kind==='interval'?earExercise.correct.semitones:earExercise.correct.name);
+      const isCorrect=earChosen===correctKey;
+      earAnswered=true; earSessionScore.total++; if(isCorrect) earSessionScore.correct++;
+      S.recordEarAttempt(earExercise.key, isCorrect);
+      if (isCorrect) { const xp=Math.round(4*H.streakMultiplier()); const r=S.addXp('guitare',xp,'ear'); afterMutation(r); toast(`✓ +${xp} XP`); }
+      render(); return;
+    }
+    if (e.target.closest('[data-ear-next]')) { earExercise=null; render(); return; }
+    if (e.target.closest('[data-ear-switch]')) { earMode=null; earExercise=null; render(); return; }
 
     /* Démarrer une leçon : inscrire des cartes dans le SRS */
     const lesson=e.target.closest('[data-lesson]');
@@ -1326,6 +1456,14 @@
       if (firstToday && text.length>=20) { S.addXp('lettres', Math.round(10*H.streakMultiplier()), 'diary'); } // save inclus
       else S.save();
       afterMutation(); toast(firstToday?'Journée enregistrée.':'Journal mis à jour.'); render(); return;
+    }
+    if (e.target.id==='impro-form') {
+      const fd=new FormData(e.target);
+      const style=(fd.get('style')||'').trim(), note=(fd.get('note')||'').trim();
+      if (!note) { render(); return; }
+      S.addImproEntry(null, style, note);
+      const xp=Math.round(5*H.streakMultiplier()); const r=S.addXp('guitare', xp, 'impro');
+      afterMutation(r); toast(`Noté · +${xp} XP`); e.target.reset(); render(); return;
     }
   });
 
