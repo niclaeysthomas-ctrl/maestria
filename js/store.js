@@ -83,7 +83,8 @@
       daily:{}, quests:defaultQuests(), readingLog:[], opinions:[], diary:[],
       city:{ buildings:{} }, courseProgress:{ lessons:{} },
       earTraining:{ attempts:{} }, improJournal:[], notes:[], calendar:{ events:[] },
-      exercises:{ stats:{}, dailyLog:[] }, calibration:{ attempts:[] }, mentalModels:{ journal:[] } };
+      exercises:{ stats:{}, dailyLog:[] }, calibration:{ attempts:[] }, mentalModels:{ journal:[] },
+      biasJournal:[], victories:[] };
   }
 
   /* ---------- Persistance ---------- */
@@ -120,6 +121,8 @@
       if (!s.calibration.attempts) s.calibration.attempts = [];
       if (!s.mentalModels) s.mentalModels = { journal:[] };
       if (!s.mentalModels.journal) s.mentalModels.journal = [];
+      if (!s.biasJournal) s.biasJournal = [];
+      if (!s.victories) s.victories = [];
       return s;
     } catch { return freshState(); }
   }
@@ -498,6 +501,31 @@
     return { xp, ...addXp('lettres', xp, 'mentalmodel') }; // save inclus
   }
 
+  /* ---------- Biais cognitifs (journal « pris en flagrant délit ») ---------- */
+  function biasEntriesFor(biasId) { return (state.biasJournal || []).filter((e) => e.biasId === biasId).slice().reverse(); }
+  function biasJournalAll() { return (state.biasJournal || []).slice().reverse(); }
+  function addBiasEntry(biasId, situation) {
+    state.biasJournal = state.biasJournal || [];
+    state.biasJournal.push({ date: Dates.today(), biasId, situation });
+    const xp = Math.round(6 * H.streakMultiplier());
+    return { xp, ...addXp('lettres', xp, 'bias') }; // save inclus
+  }
+
+  /* ---------- Journal de victoires (antidote à la dévalorisation du positif) ---------- */
+  function victoriesAll() { return (state.victories || []).slice().reverse(); }
+  function victoryOfToday() {
+    const list = state.victories || [];
+    if (!list.length) return null;
+    const dayIdx = Number(Dates.today().replace(/-/g, ''));
+    return list[dayIdx % list.length];
+  }
+  function addVictory(text) {
+    state.victories = state.victories || [];
+    state.victories.push({ date: Dates.today(), text });
+    const xp = Math.round(6 * H.streakMultiplier());
+    return { xp, ...addXp('lettres', xp, 'victory') }; // save inclus
+  }
+
   window.Store = {
     get state() { return state; },
     Dates, H,
@@ -514,6 +542,8 @@
     exerciseStats, exerciseDoneToday, recordExerciseAttempt,
     recordCalibration, calibrationStats,
     mentalModelDone, addMentalModelEntry,
+    biasEntriesFor, biasJournalAll, addBiasEntry,
+    victoriesAll, victoryOfToday, addVictory,
     exportJSON, importJSON,
     /* Profils */
     getProfiles, createProfile, deleteProfile, switchProfile,

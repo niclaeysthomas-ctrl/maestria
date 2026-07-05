@@ -7,6 +7,7 @@
   const { COURSES } = window.MAESTRIA_COURSES;
   const { IMPRO_TIPS } = window.MAESTRIA_IMPRO;
   const { MENTAL_MODELS } = window.MAESTRIA_MODELS;
+  const { COGNITIVE_BIASES } = window.MAESTRIA_BIASES;
   const S = window.Store;
   const { Dates, H } = S;
 
@@ -142,6 +143,7 @@
     const gl = S.levelProgress(H.globalXp());
     const streak = H.currentStreak();
     const coach = S.coachMessage();
+    const todayVictory = S.victoryOfToday();
     const phase = S.hardnessPhase();
     const dp = S.dailyProgress();
     const due = window.SRS.dueCount();
@@ -226,6 +228,8 @@
         <p>${esc(coach.text)}</p>
       </div>
 
+      ${todayVictory ? `<button class="card victory-reminder" data-go="#/victories">🏆 <b>Rappel :</b> ${esc(todayVictory.text)}</button>` : ''}
+
       <h2 class="section">Quêtes non négociables</h2>
       <div class="quests">${habitsHTML}</div>
 
@@ -238,7 +242,11 @@
 
       <button class="card cta" data-go="#/calendar">📅 Calendrier ${upcomingWeekCount > 0 ? `· <span class="badge">${upcomingWeekCount} à venir cette semaine</span>` : `<span class="muted small">· rien de prévu cette semaine</span>`} →</button>
 
-      <button class="card cta" data-go="#/models">🧰 Modèles mentaux · <span class="badge">${modelsDoneCount}/${MENTAL_MODELS.length} appliqués</span> →</button>
+      <h2 class="section">🧠 Pensée</h2>
+      <div class="row">
+        <button class="btn block" data-go="#/models">🧰 Modèles <span class="badge">${modelsDoneCount}/${MENTAL_MODELS.length}</span></button>
+        <button class="btn block" data-go="#/biases">🎭 Biais</button>
+      </div>
 
       <h2 class="section">🎵 Musique</h2>
       <div class="row">
@@ -727,6 +735,7 @@
           <div><h1>Journal</h1><span class="muted small">${written} entrée${written > 1 ? 's' : ''} · une par jour</span></div></div></header>
       <button class="card cta" data-go="#/notes">📒 Mes notes — cahier du jour →</button>
       <button class="card cta" data-go="#/calendar">📅 Calendrier — toute l'année →</button>
+      <button class="card cta" data-go="#/victories">🏆 Mes victoires →</button>
       <button class="btn block" data-go="#/diary/bilan">📅 Bilan des 14 derniers jours →</button>
       <form id="diary-form" class="stack">
         <h2 class="section">${todayEntry ? 'Modifier' : 'Aujourd\'hui'} · ${esc(Dates.label(today))}</h2>
@@ -1098,6 +1107,69 @@
         <button class="btn primary block" type="submit">Enregistrer dans mon journal</button>
       </form>
       ${entriesHTML}`;
+  }
+
+  /* ======================================================
+     BIAIS COGNITIFS (catalogue + journal « pris en flagrant délit »)
+     ====================================================== */
+  function viewBiases() {
+    nav.hidden = false;
+    const items = COGNITIVE_BIASES.map((b) => {
+      const n = S.biasEntriesFor(b.id).length;
+      return `<button class="fiche-row" data-go="#/biases/${b.id}">
+        <span class="fr-ic">${b.icon}</span>
+        <div class="cm-main"><b>${esc(b.name)}</b><span class="muted small">${n ? `${n} fois repéré` : 'à découvrir'}</span></div></button>`;
+    }).join('');
+    const recent = S.biasJournalAll().slice(0, 6).map((e) => {
+      const b = COGNITIVE_BIASES.find((x) => x.id === e.biasId);
+      return `<div class="card diary-entry"><div class="muted small">${esc(Dates.label(e.date))} · ${b ? b.icon + ' ' + esc(b.name) : ''}</div><p>${esc(e.situation)}</p></div>`;
+    }).join('');
+    app.innerHTML = `
+      <header class="dhead"><button class="back" data-go="#/">‹</button>
+        <div class="dhead-main"><span class="dicon big">🎭</span>
+          <div><h1>Mes biais</h1><span class="muted small">Repère-les, ils deviendront moins puissants</span></div></div></header>
+      ${items}
+      <h2 class="section">📓 Journal — flagrants délits récents</h2>
+      ${recent || `<div class="card empty">Rien encore. Ouvre un biais et note la prochaine fois que tu t'y prends.</div>`}`;
+  }
+
+  function viewBias(biasId) {
+    nav.hidden = false;
+    const b = COGNITIVE_BIASES.find((x) => x.id === biasId);
+    if (!b) { app.innerHTML = `<div class="card empty">Biais introuvable.</div>`; return; }
+    const entriesHTML = S.biasEntriesFor(biasId).map((e) => `<div class="card diary-entry"><div class="muted small">${esc(Dates.label(e.date))}</div><p>${esc(e.situation)}</p></div>`).join('');
+    app.innerHTML = `
+      <header class="dhead"><button class="back" data-go="#/biases">‹</button>
+        <div class="dhead-main"><span class="dicon big">${b.icon}</span>
+          <div><h1>${esc(b.name)}</h1></div></div></header>
+      <div class="card"><h3 class="lb">📖 Le biais</h3><p class="lesson-theory">${esc(b.description)}</p></div>
+      <div class="card"><h3 class="lb">🔍 Comment le repérer</h3><p class="lesson-theory">${esc(b.howToSpot)}</p></div>
+      <div class="card"><h3 class="lb">💡 Exemple</h3><p class="lesson-theory">${esc(b.example)}</p></div>
+      <form id="bias-form" class="stack">
+        <h2 class="section">🚨 Je me suis pris en flagrant délit</h2>
+        <textarea name="situation" rows="4" placeholder="Décris la situation…"></textarea>
+        <button class="btn primary block" type="submit">Enregistrer dans mon journal</button>
+      </form>
+      ${entriesHTML}`;
+  }
+
+  /* ======================================================
+     JOURNAL DE VICTOIRES (antidote à la dévalorisation du positif)
+     ====================================================== */
+  function viewVictories() {
+    nav.hidden = false;
+    const list = S.victoriesAll();
+    const listHTML = list.map((v) => `<div class="card diary-entry"><div class="muted small">${esc(Dates.label(v.date))}</div><p>${esc(v.text)}</p></div>`).join('');
+    app.innerHTML = `
+      <header class="dhead"><button class="back" data-go="#/diary">‹</button>
+        <div class="dhead-main"><span class="dicon big">🏆</span>
+          <div><h1>Mes victoires</h1><span class="muted small">${list.length} preuve(s) enregistrée(s)</span></div></div></header>
+      <div class="card">Note une vraie réussite, même petite. Un jour où tu doutes, reviens ici — les preuves y seront toujours.</div>
+      <form id="victory-form" class="stack">
+        <textarea name="text" rows="3" placeholder="Qu'as-tu accompli ?"></textarea>
+        <button class="btn primary block" type="submit">Ajouter à mes victoires</button>
+      </form>
+      ${listHTML}`;
   }
 
   /* ======================================================
@@ -1578,6 +1650,8 @@
     else if (root==='review') { if (parts[1]==='exercises') viewExercises(parts[2]); else viewReview(parts[1]); }
     else if (root==='calibration') viewCalibration();
     else if (root==='models') { if (parts[1]) viewMentalModel(parts[1]); else viewMentalModels(); }
+    else if (root==='biases') { if (parts[1]) viewBias(parts[1]); else viewBiases(); }
+    else if (root==='victories') viewVictories();
     else if (root==='tools')  viewTools();
     else if (root==='settings') viewSettings();
     else viewToday();
@@ -1873,6 +1947,21 @@
       if (!text) { render(); return; }
       const r=S.addMentalModelEntry(modelId, text);
       afterMutation(r); toast(`Appliqué · +${r.xp} XP`); e.target.reset(); render(); return;
+    }
+    if (e.target.id==='bias-form') {
+      const biasId=location.hash.split('/')[2];
+      const fd=new FormData(e.target);
+      const situation=(fd.get('situation')||'').trim();
+      if (!situation) { render(); return; }
+      const r=S.addBiasEntry(biasId, situation);
+      afterMutation(r); toast(`Noté · +${r.xp} XP`); e.target.reset(); render(); return;
+    }
+    if (e.target.id==='victory-form') {
+      const fd=new FormData(e.target);
+      const text=(fd.get('text')||'').trim();
+      if (!text) { render(); return; }
+      const r=S.addVictory(text);
+      afterMutation(r); toast(`Victoire enregistrée · +${r.xp} XP`); e.target.reset(); render(); return;
     }
     if (e.target.id==='note-form') {
       const fd=new FormData(e.target);

@@ -1,10 +1,10 @@
 /* Maestria — service worker : cache app-shell pour usage hors-ligne. */
-const CACHE = 'maestria-v13';
+const CACHE = 'maestria-v14';
 const ASSETS = [
   './', './index.html',
   './css/styles.css',
   './js/config.js', './js/content.js', './js/courses.js', './js/store.js', './js/srs.js', './js/metronome.js',
-  './js/eartraining.js', './js/impro.js', './js/exercises.js', './js/mentalmodels.js', './js/app.js',
+  './js/eartraining.js', './js/impro.js', './js/exercises.js', './js/mentalmodels.js', './js/biases.js', './js/app.js',
   './manifest.webmanifest', './icon.svg',
 ];
 
