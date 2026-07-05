@@ -388,6 +388,19 @@ ul { list-style: none; padding: 0; margin: 0; }
 .exercise-solution p { margin: 0; line-height: 1.55; }
 .quality-row { flex-wrap: wrap; }
 .quality-row .btn { flex: 1 1 auto; min-width: 90px; font-size: .78rem; padding: 9px 6px; }
+.confidence-row { flex-wrap: wrap; }
+.confidence-row .btn { flex: 1 1 auto; min-width: 100px; font-size: .78rem; padding: 9px 6px; }
+.calib-feedback { border-radius: 10px; padding: 11px 13px; font-size: .9rem; line-height: 1.5; }
+.calib-feedback.over { background: #4f1d1d; color: #ffd0d0; }
+.calib-feedback.under { background: #163a4a; color: #c8e6ff; }
+.calib-feedback.good { background: #14502f; color: #c8ffe0; }
+.calib-verdict { text-align: center; font-weight: 600; padding: 12px; }
+.calib-scene { text-align: center; }
+.calib-scene svg { display: block; margin: 0 auto; }
+.calib-row { display: flex; justify-content: space-between; gap: 8px; background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 9px 13px; margin: 6px 0; font-size: .82rem; border-left: 4px solid var(--line); }
+.calib-row.over { border-left-color: #ef4444; }
+.calib-row.under { border-left-color: #0ea5e9; }
+.calib-row.good { border-left-color: #10b981; }
 
 /* ---------- Impro Coach ---------- */
 .impro-tip.locked { opacity: .6; }

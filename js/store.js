@@ -83,7 +83,7 @@
       daily:{}, quests:defaultQuests(), readingLog:[], opinions:[], diary:[],
       city:{ buildings:{} }, courseProgress:{ lessons:{} },
       earTraining:{ attempts:{} }, improJournal:[], notes:[], calendar:{ events:[] },
-      exercises:{ stats:{}, dailyLog:[] } };
+      exercises:{ stats:{}, dailyLog:[] }, calibration:{ attempts:[] }, mentalModels:{ journal:[] } };
   }
 
   /* ---------- Persistance ---------- */
@@ -116,6 +116,10 @@
       if (!s.exercises) s.exercises = { stats:{}, dailyLog:[] };
       if (!s.exercises.stats) s.exercises.stats = {};
       if (!s.exercises.dailyLog) s.exercises.dailyLog = [];
+      if (!s.calibration) s.calibration = { attempts:[] };
+      if (!s.calibration.attempts) s.calibration.attempts = [];
+      if (!s.mentalModels) s.mentalModels = { journal:[] };
+      if (!s.mentalModels.journal) s.mentalModels.journal = [];
       return s;
     } catch { return freshState(); }
   }
@@ -464,6 +468,36 @@
     save();
   }
 
+  /* ---------- Calibration (confiance déclarée vs justesse réelle) ---------- */
+  function recordCalibration(exerciseId, disciplineId, confidence, correctness) {
+    state.calibration = state.calibration || { attempts:[] };
+    state.calibration.attempts.push({ date: Dates.today(), exerciseId, disciplineId, confidence, correctness });
+    save();
+  }
+  function calibrationStats() {
+    const attempts = (state.calibration && state.calibration.attempts) || [];
+    if (!attempts.length) return null;
+    const buckets = [25, 50, 75, 100].map((b) => {
+      const inBucket = attempts.filter((a) => a.confidence === b);
+      const avgCorrectness = inBucket.length ? inBucket.reduce((s, a) => s + a.correctness, 0) / inBucket.length : null;
+      return { confidence: b, count: inBucket.length, avgCorrectness };
+    });
+    const avgGap = attempts.reduce((s, a) => s + (a.confidence / 100 - a.correctness), 0) / attempts.length;
+    const overCount = attempts.filter((a) => (a.confidence / 100 - a.correctness) > 0.2).length;
+    const underCount = attempts.filter((a) => (a.correctness - a.confidence / 100) > 0.2).length;
+    const wellCount = attempts.length - overCount - underCount;
+    return { total: attempts.length, buckets, avgGap, overCount, underCount, wellCount, recent: attempts.slice(-10).reverse() };
+  }
+
+  /* ---------- Modèles mentaux (bibliothèque + journal d'application) ---------- */
+  function mentalModelDone(modelId) { return ((state.mentalModels && state.mentalModels.journal) || []).some((e) => e.modelId === modelId); }
+  function addMentalModelEntry(modelId, text) {
+    state.mentalModels = state.mentalModels || { journal:[] };
+    state.mentalModels.journal.push({ date: Dates.today(), modelId, text });
+    const xp = Math.round(6 * H.streakMultiplier());
+    return { xp, ...addXp('lettres', xp, 'mentalmodel') }; // save inclus
+  }
+
   window.Store = {
     get state() { return state; },
     Dates, H,
@@ -478,6 +512,8 @@
     notesForDate, notesDays, addNote, removeNote,
     eventsForDate, eventsInRange, addCalendarEvent, removeCalendarEvent, exportCalendarICS,
     exerciseStats, exerciseDoneToday, recordExerciseAttempt,
+    recordCalibration, calibrationStats,
+    mentalModelDone, addMentalModelEntry,
     exportJSON, importJSON,
     /* Profils */
     getProfiles, createProfile, deleteProfile, switchProfile,

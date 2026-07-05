@@ -6,6 +6,7 @@
   const { DECKS, READINGS } = window.MAESTRIA_CONTENT;
   const { COURSES } = window.MAESTRIA_COURSES;
   const { IMPRO_TIPS } = window.MAESTRIA_IMPRO;
+  const { MENTAL_MODELS } = window.MAESTRIA_MODELS;
   const S = window.Store;
   const { Dates, H } = S;
 
@@ -18,7 +19,7 @@
   let lastRenderDay = '';  // jour (YYYY-MM-DD) du dernier rendu — pour détecter le passage à un nouveau jour
   let studyDeckId = null, studyIdx = 0, studyFlip = false;
   let earMode = null, earExercise = null, earAnswered = false, earChosen = null, earSessionScore = { correct:0, total:0 };
-  let exerciseQueue = null, exerciseIdx = 0, exerciseRevealed = false, exerciseGraded = false, exerciseMode = 'today', exerciseLastQuality = null;
+  let exerciseQueue = null, exerciseIdx = 0, exerciseRevealed = false, exerciseGraded = false, exerciseMode = 'today', exerciseLastQuality = null, exerciseConfidence = null;
 
   /* Mélange un tableau (copie, Fisher-Yates) — pour l'entraînement libre. */
   function shuffle(arr) {
@@ -148,6 +149,7 @@
     const reading = readingOfToday();
     const readDone = reading && (S.state.readingLog || []).some((x) => x.date === Dates.today() && x.readingId === reading.id);
     const upcomingWeekCount = S.eventsInRange(Dates.today(), Dates.addDays(Dates.today(), 6)).length;
+    const modelsDoneCount = MENTAL_MODELS.filter((m) => S.mentalModelDone(m.id)).length;
     const profile = S.activeProfile();
     const name = profile ? profile.name.split(' ')[0] : '';
 
@@ -235,6 +237,8 @@
       <button class="card cta" data-go="#/city">🏰 Ta Cité ${S.City.pierresAvailable() > 0 ? `· <span class="badge">${S.City.pierresAvailable()} 🪨 à dépenser</span>` : `<span class="muted small">· monte de niveau pour bâtir</span>`} →</button>
 
       <button class="card cta" data-go="#/calendar">📅 Calendrier ${upcomingWeekCount > 0 ? `· <span class="badge">${upcomingWeekCount} à venir cette semaine</span>` : `<span class="muted small">· rien de prévu cette semaine</span>`} →</button>
+
+      <button class="card cta" data-go="#/models">🧰 Modèles mentaux · <span class="badge">${modelsDoneCount}/${MENTAL_MODELS.length} appliqués</span> →</button>
 
       <h2 class="section">🎵 Musique</h2>
       <div class="row">
@@ -918,6 +922,14 @@
     return list[dayIdx % list.length];
   }
 
+  const CONFIDENCE_LEVELS = [
+    { v:25,  label:'25 % · je devine' },
+    { v:50,  label:'50 % · incertain' },
+    { v:75,  label:'75 % · assez sûr' },
+    { v:100, label:'100 % · certain' },
+  ];
+  const QUALITY_CORRECTNESS = [0, 1/3, 2/3, 1]; // mappe le palier de qualité (0-3) sur une justesse 0-1
+
   function viewExercises(disciplineId) {
     nav.hidden = false;
     if (!disciplineId) {
@@ -928,7 +940,8 @@
             <div><h1>Exercices</h1><span class="muted small">Construis tes réflexes, pas juste ta mémoire</span></div></div></header>
         ${reviewModeSwitchHTML('exercises')}
         <button class="card cta" data-go="#/review/exercises/economie">💹 Finance — exercice du jour →</button>
-        <button class="btn block" data-go="#/review/exercises/espagnol">🇪🇸 Espagnol — exercice du jour →</button>`;
+        <button class="btn block" data-go="#/review/exercises/espagnol">🇪🇸 Espagnol — exercice du jour →</button>
+        <button class="btn block" data-go="#/calibration">📐 Ma calibration →</button>`;
       return;
     }
 
@@ -942,12 +955,36 @@
       const today = exerciseOfToday(disciplineId);
       exerciseMode = 'today'; exerciseQueue = [today.id]; exerciseIdx = 0;
       exerciseRevealed = !!doneLog; exerciseGraded = !!doneLog; exerciseLastQuality = doneLog ? doneLog.quality : null;
+      const pastCalib = doneLog && (S.state.calibration.attempts || []).find((a) => a.date === Dates.today() && a.exerciseId === today.id);
+      exerciseConfidence = pastCalib ? pastCalib.confidence : null;
     }
 
     const ex = list.find((x) => x.id === exerciseQueue[exerciseIdx]);
     if (!ex) { exerciseQueue = null; render(); return; }
 
     const qualityHTML = QUALITY_LEVELS.map((q) => `<button class="btn ${exerciseGraded && exerciseLastQuality === q.v ? 'primary' : ''}" ${exerciseGraded ? 'disabled' : ''} data-ex-quality="${q.v}">${q.label}</button>`).join('');
+    const confidenceHTML = CONFIDENCE_LEVELS.map((c) => `<button class="btn" data-ex-confidence="${c.v}">${c.label}</button>`).join('');
+
+    let calibHTML = '';
+    if (exerciseGraded && exerciseConfidence != null) {
+      const correctness = QUALITY_CORRECTNESS[exerciseLastQuality];
+      const gap = exerciseConfidence / 100 - correctness;
+      const cls = gap > 0.2 ? 'over' : (gap < -0.2 ? 'under' : 'good');
+      const msg = gap > 0.2 ? `🔺 Tu étais plus confiant (${exerciseConfidence}%) que ta réponse ne le méritait — surconfiance à surveiller.`
+        : gap < -0.2 ? `🔻 Tu étais moins confiant (${exerciseConfidence}%) que ta réponse ne le méritait — tu te sous-estimes.`
+        : `✅ Bien calibré : ta confiance (${exerciseConfidence}%) correspondait à ta performance réelle.`;
+      calibHTML = `<div class="calib-feedback ${cls}">${msg}</div>`;
+    }
+
+    let bodyHTML;
+    if (!exerciseRevealed) {
+      bodyHTML = exerciseConfidence === null
+        ? `<p class="muted small">Avant de révéler : à quel point es-tu confiant dans ta réponse ?</p><div class="row confidence-row">${confidenceHTML}</div>`
+        : `<button class="btn primary block" data-reveal-exercise>Révéler la correction</button>`;
+    } else {
+      bodyHTML = `<div class="exercise-solution"><b>Correction</b><p>${esc(ex.solution)}</p></div>`
+        + (!exerciseGraded ? `<p class="muted small">Comment évalues-tu ta réponse ?</p><div class="row quality-row">${qualityHTML}</div>` : calibHTML);
+    }
 
     app.innerHTML = `
       <header class="dhead"><button class="back" data-go="#/review/exercises">‹</button>
@@ -956,13 +993,111 @@
       ${reviewModeSwitchHTML('exercises')}
       <div class="card exercise-card">
         <p class="exercise-prompt">${esc(ex.prompt)}</p>
-        ${!exerciseRevealed ? `<button class="btn primary block" data-reveal-exercise>Révéler la correction</button>` : `
-          <div class="exercise-solution"><b>Correction</b><p>${esc(ex.solution)}</p></div>
-          <p class="muted small">Comment évalues-tu ta réponse ?</p>
-          <div class="row quality-row">${qualityHTML}</div>`}
+        ${bodyHTML}
       </div>
       ${exerciseGraded ? `<button class="card cta" data-ex-next="${disciplineId}">${exerciseMode === 'today' ? '🎯 Continuer en entraînement libre' : '→ Exercice suivant'} →</button>` : ''}
       <button class="btn block" data-go="#/review/exercises">‹ Changer de discipline</button>`;
+  }
+
+  /* ======================================================
+     CALIBRATION (confiance déclarée vs justesse réelle)
+     ====================================================== */
+  function calibrationBarsSVG(buckets) {
+    const W = 300, H = 190, mL = 34, mB = 26, plotW = W - mL - 14, plotH = H - mB - 14;
+    const x = (conf) => mL + (conf / 100) * plotW;
+    const y = (v) => 14 + (1 - v) * plotH;
+    let s = `<svg viewBox="0 0 ${W} ${H}" width="100%" style="max-width:340px" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Diagramme de calibration">`;
+    s += `<line x1="${mL}" y1="${y(0)}" x2="${mL}" y2="14" stroke="#3a3f6e" stroke-width="1"/>`;
+    s += `<line x1="${mL}" y1="${y(0)}" x2="${W-14}" y2="${y(0)}" stroke="#3a3f6e" stroke-width="1"/>`;
+    s += `<line x1="${x(25)}" y1="${y(0.25)}" x2="${x(100)}" y2="${y(1)}" stroke="#5a5f88" stroke-width="1.5" stroke-dasharray="4 3"/>`;
+    [0,0.25,0.5,0.75,1].forEach((v) => s += `<text x="${mL-6}" y="${y(v)+3}" font-size="8" fill="#6b7099" text-anchor="end">${Math.round(v*100)}%</text>`);
+    buckets.forEach((b) => {
+      if (b.avgCorrectness == null) return;
+      const cx = x(b.confidence), cy = y(b.avgCorrectness), r = 6 + Math.min(10, b.count);
+      const c = Math.abs(b.confidence/100 - b.avgCorrectness) > 0.2 ? (b.confidence/100 > b.avgCorrectness ? '#ef4444' : '#0ea5e9') : '#10b981';
+      s += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${c}" opacity="0.85"/>`;
+      s += `<text x="${cx}" y="${y(0)+16}" font-size="8" fill="#8a8fb5" text-anchor="middle">${b.confidence}%</text>`;
+    });
+    return s + `</svg>`;
+  }
+
+  function viewCalibration() {
+    nav.hidden = false;
+    const stats = S.calibrationStats();
+    if (!stats) {
+      app.innerHTML = `
+        <header class="dhead"><button class="back" data-go="#/review/exercises">‹</button>
+          <div class="dhead-main"><span class="dicon big">📐</span>
+            <div><h1>Ma calibration</h1><span class="muted small">Ta confiance vs ta vraie performance</span></div></div></header>
+        <div class="card empty">Fais quelques exercices en indiquant ta confiance avant de révéler la correction — ta calibration apparaîtra ici.</div>`;
+      return;
+    }
+    const verdict = stats.avgGap > 0.15 ? '🔺 Tendance à la surconfiance' : (stats.avgGap < -0.15 ? '🔻 Tendance à la sous-confiance' : '✅ Globalement bien calibré');
+    const recentHTML = stats.recent.map((a) => {
+      const gap = a.confidence/100 - a.correctness;
+      const cls = gap > 0.2 ? 'over' : (gap < -0.2 ? 'under' : 'good');
+      return `<div class="calib-row ${cls}"><span>${esc(Dates.label(a.date))}</span><span>confiance ${a.confidence}%</span><span>justesse ${Math.round(a.correctness*100)}%</span></div>`;
+    }).join('');
+    app.innerHTML = `
+      <header class="dhead"><button class="back" data-go="#/review/exercises">‹</button>
+        <div class="dhead-main"><span class="dicon big">📐</span>
+          <div><h1>Ma calibration</h1><span class="muted small">${stats.total} exercice(s) évalué(s)</span></div></div></header>
+      <div class="card calib-verdict">${verdict}</div>
+      <div class="card calib-scene">${calibrationBarsSVG(stats.buckets)}
+        <p class="muted small center">La ligne pointillée = calibration parfaite. Rouge = surconfiant, bleu = sous-confiant, vert = bien calibré.</p></div>
+      <div class="row cal-legend">
+        <span class="cal-legend-item"><i style="background:#ef4444"></i>Surconfiant : ${stats.overCount}</span>
+        <span class="cal-legend-item"><i style="background:#0ea5e9"></i>Sous-confiant : ${stats.underCount}</span>
+        <span class="cal-legend-item"><i style="background:#10b981"></i>Bien calibré : ${stats.wellCount}</span>
+      </div>
+      <h2 class="section">🕓 Récents</h2>
+      ${recentHTML}`;
+  }
+
+  /* ======================================================
+     MODÈLES MENTAUX (bibliothèque + journal d'application)
+     ====================================================== */
+  function viewMentalModels() {
+    nav.hidden = false;
+    const doneCount = MENTAL_MODELS.filter((m) => S.mentalModelDone(m.id)).length;
+    const byCategory = {};
+    MENTAL_MODELS.forEach((m) => { (byCategory[m.category] = byCategory[m.category] || []).push(m); });
+    const catsHTML = Object.keys(byCategory).map((cat) => {
+      const items = byCategory[cat].map((m) => {
+        const done = S.mentalModelDone(m.id);
+        return `<button class="fiche-row" data-go="#/models/${m.id}">
+          <span class="fr-ic">${m.icon}</span>
+          <div class="cm-main"><b>${esc(m.name)}</b><span class="muted small">${done ? '✓ appliqué' : 'à découvrir'}</span></div></button>`;
+      }).join('');
+      return `<h2 class="section">${esc(cat)}</h2>${items}`;
+    }).join('');
+    app.innerHTML = `
+      <header class="dhead"><button class="back" data-go="#/">‹</button>
+        <div class="dhead-main"><span class="dicon big">🧰</span>
+          <div><h1>Modèles mentaux</h1><span class="muted small">${doneCount}/${MENTAL_MODELS.length} appliqués</span></div></div></header>
+      <div class="xpbar"><div class="xpbar-fill" style="width:${Math.round(doneCount / MENTAL_MODELS.length * 100)}%;background:#a78bfa"></div></div>
+      ${catsHTML}`;
+  }
+
+  function viewMentalModel(modelId) {
+    nav.hidden = false;
+    const m = MENTAL_MODELS.find((x) => x.id === modelId);
+    if (!m) { app.innerHTML = `<div class="card empty">Modèle introuvable.</div>`; return; }
+    const entries = (S.state.mentalModels.journal || []).filter((e) => e.modelId === modelId).slice().reverse();
+    const entriesHTML = entries.map((e) => `<div class="card diary-entry"><div class="muted small">${esc(Dates.label(e.date))}</div><p>${esc(e.text)}</p></div>`).join('');
+    app.innerHTML = `
+      <header class="dhead"><button class="back" data-go="#/models">‹</button>
+        <div class="dhead-main"><span class="dicon big">${m.icon}</span>
+          <div><h1>${esc(m.name)}</h1><span class="muted small">${esc(m.category)}</span></div></div></header>
+      <div class="card"><h3 class="lb">📖 Le concept</h3><p class="lesson-theory">${esc(m.description)}</p></div>
+      <div class="card"><h3 class="lb">💡 Exemple concret</h3><p class="lesson-theory">${esc(m.example)}</p></div>
+      <form id="model-form" class="stack">
+        <h2 class="section">✍️ Applique-le à ta vie</h2>
+        <p class="muted small">${esc(m.prompt)}</p>
+        <textarea name="text" rows="4" placeholder="Ta réponse…"></textarea>
+        <button class="btn primary block" type="submit">Enregistrer dans mon journal</button>
+      </form>
+      ${entriesHTML}`;
   }
 
   /* ======================================================
@@ -1441,6 +1576,8 @@
     else if (root==='study') viewStudy(parts[1]);
     else if (root==='d')    viewDiscipline(parts[1]);
     else if (root==='review') { if (parts[1]==='exercises') viewExercises(parts[2]); else viewReview(parts[1]); }
+    else if (root==='calibration') viewCalibration();
+    else if (root==='models') { if (parts[1]) viewMentalModel(parts[1]); else viewMentalModels(); }
     else if (root==='tools')  viewTools();
     else if (root==='settings') viewSettings();
     else viewToday();
@@ -1534,7 +1671,9 @@
     if (e.target.closest('[data-ear-next]')) { earExercise=null; render(); return; }
     if (e.target.closest('[data-ear-switch]')) { earMode=null; earExercise=null; render(); return; }
 
-    /* Exercices : révéler la correction, noter (4 paliers), enchaîner */
+    /* Exercices : confiance déclarée, révéler la correction, noter (4 paliers), enchaîner */
+    const exConfidence=e.target.closest('[data-ex-confidence]');
+    if (exConfidence && exerciseConfidence===null) { exerciseConfidence=Number(exConfidence.dataset.exConfidence); render(); return; }
     if (e.target.closest('[data-reveal-exercise]')) { exerciseRevealed=true; render(); return; }
     const exQuality=e.target.closest('[data-ex-quality]');
     if (exQuality && !exerciseGraded) {
@@ -1544,6 +1683,7 @@
       const quality=Number(exQuality.dataset.exQuality);
       const q=window.MAESTRIA_EXERCISES.QUALITY_LEVELS.find((x)=>x.v===quality);
       S.recordExerciseAttempt(ex.id, disciplineId, quality, exerciseMode==='today');
+      if (exerciseConfidence!=null) S.recordCalibration(ex.id, disciplineId, exerciseConfidence, QUALITY_CORRECTNESS[quality]);
       exerciseGraded=true; exerciseLastQuality=quality;
       const xp=Math.round((q.xp||0)*H.streakMultiplier());
       if (xp>0) { const r=S.addXp(disciplineId, xp, 'exercise'); afterMutation(r); toast(`${q.label} · +${xp} XP`); }
@@ -1557,7 +1697,7 @@
       const stats=(id)=>S.exerciseStats(id);
       const toWeighted=(id)=>{ const st=stats(id); return { correct:st.sumQuality, total:st.count*3 }; };
       const picked=window.EarTraining.pickWeighted(list, (it)=>toWeighted(it.id));
-      exerciseMode='free'; exerciseQueue=[picked.id]; exerciseIdx=0; exerciseRevealed=false; exerciseGraded=false; exerciseLastQuality=null;
+      exerciseMode='free'; exerciseQueue=[picked.id]; exerciseIdx=0; exerciseRevealed=false; exerciseGraded=false; exerciseLastQuality=null; exerciseConfidence=null;
       render(); return;
     }
 
@@ -1725,6 +1865,14 @@
       S.addImproEntry(null, style, note);
       const xp=Math.round(5*H.streakMultiplier()); const r=S.addXp('guitare', xp, 'impro');
       afterMutation(r); toast(`Noté · +${xp} XP`); e.target.reset(); render(); return;
+    }
+    if (e.target.id==='model-form') {
+      const modelId=location.hash.split('/')[2];
+      const fd=new FormData(e.target);
+      const text=(fd.get('text')||'').trim();
+      if (!text) { render(); return; }
+      const r=S.addMentalModelEntry(modelId, text);
+      afterMutation(r); toast(`Appliqué · +${r.xp} XP`); e.target.reset(); render(); return;
     }
     if (e.target.id==='note-form') {
       const fd=new FormData(e.target);
