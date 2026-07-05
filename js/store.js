@@ -84,7 +84,7 @@
       city:{ buildings:{} }, courseProgress:{ lessons:{} },
       earTraining:{ attempts:{} }, improJournal:[], notes:[], calendar:{ events:[] },
       exercises:{ stats:{}, dailyLog:[] }, calibration:{ attempts:[] }, mentalModels:{ journal:[] },
-      biasJournal:[], victories:[] };
+      biasJournal:[], victories:[], essays:[], steelmans:[] };
   }
 
   /* ---------- Persistance ---------- */
@@ -123,6 +123,8 @@
       if (!s.mentalModels.journal) s.mentalModels.journal = [];
       if (!s.biasJournal) s.biasJournal = [];
       if (!s.victories) s.victories = [];
+      if (!s.essays) s.essays = [];
+      if (!s.steelmans) s.steelmans = [];
       return s;
     } catch { return freshState(); }
   }
@@ -213,27 +215,51 @@
   }
 
   /* Coach v2 : tient compte des quêtes du jour ET de la phase de dureté (progressive). */
+  /* Coach socratique : un jour sur deux (déterministe par date), une question réflexive
+     remplace l'affirmation — pour faire réfléchir plutôt que juste dicter. */
   function coachMessage() {
     const phase = hardnessPhase();          // 'doux' (rodage <14j) | 'dur'
     const dp = dailyProgress();             // { doneCount, total }
     const streak = H.currentStreak();
     const activeToday = H.activeDates().has(Dates.today());
     const name = (state.settings.name || 'toi').split(' ')[0];
+    const socratic = Number(Dates.today().replace(/-/g, '')) % 2 === 0;
+    const pick = (tone, statement, question) => ({ tone, text: socratic ? question : statement, socratic });
 
     if (phase === 'doux') {
       if (dp.doneCount === dp.total)
-        return { tone:'ok',     text:`${dp.total}/${dp.total} quêtes, et on est encore en rodage. C'est exactement comme ça qu'une habitude s'installe, ${name}.` };
+        return pick('ok',
+          `${dp.total}/${dp.total} quêtes, et on est encore en rodage. C'est exactement comme ça qu'une habitude s'installe, ${name}.`,
+          `${dp.total}/${dp.total} quêtes faites, ${name}. Qu'est-ce qui a rendu cette journée plus facile que les autres ?`);
       if (!activeToday)
-        return { tone:'feu',    text:`Phase de rodage, ${name} : zéro pression, juste de la régularité. Coche une seule quête maintenant — la plus facile.` };
-      return   { tone:'pousse', text:`${dp.doneCount}/${dp.total} quêtes aujourd'hui. En rodage on vise la constance avant l'exploit. Encore une.` };
+        return pick('feu',
+          `Phase de rodage, ${name} : zéro pression, juste de la régularité. Coche une seule quête maintenant — la plus facile.`,
+          `Rien coché aujourd'hui, ${name}. Quelle est la quête la plus facile que tu pourrais faire là, maintenant, en 2 minutes ?`);
+      return pick('pousse',
+        `${dp.doneCount}/${dp.total} quêtes aujourd'hui. En rodage on vise la constance avant l'exploit. Encore une.`,
+        `${dp.doneCount}/${dp.total} quêtes. Qu'est-ce qui t'empêche de faire la suivante tout de suite ?`);
     }
 
     // Phase exigeante (≥ 14 jours)
-    if (streak >= 14)                 return { tone:'feu',  text:`${streak} jours d'affilée, ${name}. Tu deviens quelqu'un d'autre. Ne casse pas ça aujourd'hui.` };
-    if (!activeToday && streak === 0) return { tone:'dur',  text:`Zéro aujourd'hui, zéro hier. L'app ne s'entraîne pas à ta place. Une quête, maintenant.` };
-    if (!activeToday)                 return { tone:'dur',  text:`Streak de ${streak} en jeu. Tu vas vraiment tout lâcher pour rien ? Coche quelque chose.` };
-    if (dp.doneCount < dp.total)      return { tone:'pousse',text:`${dp.doneCount}/${dp.total} quêtes. Correct, pas suffisant. Finis ta journée.` };
-    return { tone:'ok', text:`${dp.doneCount}/${dp.total} quêtes tenues. Tu fais le travail. On monte la barre.` };
+    if (streak >= 14)
+      return pick('feu',
+        `${streak} jours d'affilée, ${name}. Tu deviens quelqu'un d'autre. Ne casse pas ça aujourd'hui.`,
+        `${streak} jours d'affilée. Qu'est-ce que ça te coûterait vraiment de t'arrêter aujourd'hui — et qu'est-ce que ça dirait de toi si tu le faisais ?`);
+    if (!activeToday && streak === 0)
+      return pick('dur',
+        `Zéro aujourd'hui, zéro hier. L'app ne s'entraîne pas à ta place. Une quête, maintenant.`,
+        `Zéro depuis 2 jours. Qu'est-ce qui a changé depuis ta dernière bonne série ?`);
+    if (!activeToday)
+      return pick('dur',
+        `Streak de ${streak} en jeu. Tu vas vraiment tout lâcher pour rien ? Coche quelque chose.`,
+        `Streak de ${streak} en jeu. Si tu le casses aujourd'hui, sera-ce à cause d'un vrai empêchement, ou d'un simple relâchement ?`);
+    if (dp.doneCount < dp.total)
+      return pick('pousse',
+        `${dp.doneCount}/${dp.total} quêtes. Correct, pas suffisant. Finis ta journée.`,
+        `${dp.doneCount}/${dp.total} quêtes. Qu'est-ce qui te retient de finir maintenant plutôt que plus tard ?`);
+    return pick('ok',
+      `${dp.doneCount}/${dp.total} quêtes tenues. Tu fais le travail. On monte la barre.`,
+      `${dp.doneCount}/${dp.total} quêtes tenues. Si tu devais monter d'un cran demain, sur quoi porterait-il ?`);
   }
 
   /* ---------- Quotidien : habitudes & dureté progressive ---------- */
@@ -526,6 +552,37 @@
     return { xp, ...addXp('lettres', xp, 'victory') }; // save inclus
   }
 
+  /* ---------- Atelier de pensée : essai hebdomadaire + steel-man ---------- */
+  function essayWeekKey(dateKey) {
+    const d = new Date(dateKey + 'T00:00:00');
+    d.setDate(d.getDate() + 4 - (d.getDay() || 7));
+    const yearStart = new Date(d.getFullYear(), 0, 1);
+    const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+    return `${d.getFullYear()}-W${String(weekNo).padStart(2, '0')}`;
+  }
+  function essayDoneThisWeek() {
+    const wk = essayWeekKey(Dates.today());
+    return (state.essays || []).find((e) => e.weekKey === wk);
+  }
+  function addEssay(promptId, text) {
+    state.essays = state.essays || [];
+    const wk = essayWeekKey(Dates.today());
+    state.essays.push({ weekKey: wk, promptId, text, date: Dates.today() });
+    const xp = Math.round(15 * H.streakMultiplier());
+    return { xp, ...addXp('lettres', xp, 'essay') }; // save inclus
+  }
+  function essaysAll() { return (state.essays || []).slice().reverse(); }
+
+  function addSteelman(opinion, counterArgument) {
+    state.steelmans = state.steelmans || [];
+    state.steelmans.push({ date: Dates.today(), opinionDate: opinion.date, readingId: opinion.readingId,
+      opinionTitle: opinion.title, opinionTheme: opinion.theme, opinionText: opinion.text, counterArgument });
+    const xp = Math.round(8 * H.streakMultiplier());
+    return { xp, ...addXp('lettres', xp, 'steelman') }; // save inclus
+  }
+  function steelmansAll() { return (state.steelmans || []).slice().reverse(); }
+  function steelmansFor(opinionDate, readingId) { return (state.steelmans || []).filter((s) => s.opinionDate === opinionDate && s.readingId === readingId); }
+
   window.Store = {
     get state() { return state; },
     Dates, H,
@@ -544,6 +601,8 @@
     mentalModelDone, addMentalModelEntry,
     biasEntriesFor, biasJournalAll, addBiasEntry,
     victoriesAll, victoryOfToday, addVictory,
+    essayWeekKey, essayDoneThisWeek, addEssay, essaysAll,
+    addSteelman, steelmansAll, steelmansFor,
     exportJSON, importJSON,
     /* Profils */
     getProfiles, createProfile, deleteProfile, switchProfile,

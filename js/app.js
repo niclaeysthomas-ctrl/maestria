@@ -8,6 +8,7 @@
   const { IMPRO_TIPS } = window.MAESTRIA_IMPRO;
   const { MENTAL_MODELS } = window.MAESTRIA_MODELS;
   const { COGNITIVE_BIASES } = window.MAESTRIA_BIASES;
+  const { ESSAY_PROMPTS } = window.MAESTRIA_THINKING;
   const S = window.Store;
   const { Dates, H } = S;
 
@@ -246,6 +247,7 @@
       <div class="row">
         <button class="btn block" data-go="#/models">🧰 Modèles <span class="badge">${modelsDoneCount}/${MENTAL_MODELS.length}</span></button>
         <button class="btn block" data-go="#/biases">🎭 Biais</button>
+        <button class="btn block" data-go="#/thinking">🏛️ Atelier</button>
       </div>
 
       <h2 class="section">🎵 Musique</h2>
@@ -1173,6 +1175,108 @@
   }
 
   /* ======================================================
+     ATELIER DE PENSÉE (essai hebdo + steel-man + cohérence)
+     ====================================================== */
+  function essayOfWeek() {
+    const wk = S.essayWeekKey(Dates.today());
+    let h = 0; for (let i = 0; i < wk.length; i++) h = (h * 31 + wk.charCodeAt(i)) | 0;
+    return { weekKey: wk, prompt: ESSAY_PROMPTS[Math.abs(h) % ESSAY_PROMPTS.length] };
+  }
+
+  function viewThinking() {
+    nav.hidden = false;
+    const done = S.essayDoneThisWeek();
+    app.innerHTML = `
+      <header class="dhead"><button class="back" data-go="#/">‹</button>
+        <div class="dhead-main"><span class="dicon big">🏛️</span>
+          <div><h1>Atelier de pensée</h1><span class="muted small">Construis des positions solides, pas juste des opinions</span></div></div></header>
+      <button class="card cta" data-go="#/thinking/essay">✍️ Essai hebdomadaire ${done ? '<span class="badge">✓ fait cette semaine</span>' : ''} →</button>
+      <button class="card cta" data-go="#/thinking/steelman">⚔️ Steel-man — défends l'avis adverse →</button>
+      <button class="card cta" data-go="#/thinking/coherence">🧭 Vérifier ma cohérence →</button>`;
+  }
+
+  function viewEssay() {
+    nav.hidden = false;
+    const done = S.essayDoneThisWeek();
+    const { prompt } = essayOfWeek();
+    const pastHTML = S.essaysAll().map((e) => {
+      const p = ESSAY_PROMPTS.find((x) => x.id === e.promptId);
+      return `<div class="card diary-entry"><div class="muted small">${esc(Dates.label(e.date))} · ${p ? esc(p.title) : ''}</div><p>${esc(e.text)}</p></div>`;
+    }).join('');
+    const head = `<header class="dhead"><button class="back" data-go="#/thinking">‹</button>
+        <div class="dhead-main"><span class="dicon big">✍️</span>
+          <div><h1>${esc(prompt.title)}</h1><span class="muted small">Essai de la semaine</span></div></div></header>`;
+    if (done) {
+      app.innerHTML = `${head}
+        <div class="card empty small">✅ Essai de cette semaine déjà écrit.</div>
+        <h2 class="section">📚 Tes essais</h2>
+        ${pastHTML}`;
+      return;
+    }
+    app.innerHTML = `${head}
+      <div class="card"><p class="lesson-theory">${esc(prompt.prompt)}</p></div>
+      <form id="essay-form" class="stack">
+        <textarea name="text" rows="10" placeholder="Développe ton argumentation…"></textarea>
+        <button class="btn primary block" type="submit">Enregistrer mon essai</button>
+      </form>
+      <h2 class="section">📚 Essais précédents</h2>
+      ${pastHTML || `<div class="card empty">Aucun essai précédent.</div>`}`;
+  }
+
+  function viewSteelmanHub() {
+    nav.hidden = false;
+    const opinions = (S.state.opinions || []).slice().reverse();
+    const itemsHTML = opinions.length ? opinions.map((o) => {
+      const done = S.steelmansFor(o.date, o.readingId).length > 0;
+      return `<button class="fiche-row" data-go="#/thinking/steelman/${o.date}_${o.readingId}">
+        <span class="fr-ic">⚔️</span>
+        <div class="cm-main"><b>${esc(o.title)}</b><span class="muted small">${esc(o.theme)} · ${esc(Dates.label(o.date))}${done ? ' · ✓ challengé' : ''}</span></div></button>`;
+    }).join('') : `<div class="card empty">Écris d'abord une opinion via la Lecture du jour, puis reviens ici la challenger.</div>`;
+    app.innerHTML = `
+      <header class="dhead"><button class="back" data-go="#/thinking">‹</button>
+        <div class="dhead-main"><span class="dicon big">⚔️</span>
+          <div><h1>Steel-man</h1><span class="muted small">Choisis une opinion à défier</span></div></div></header>
+      ${itemsHTML}`;
+  }
+
+  function viewSteelman(key) {
+    nav.hidden = false;
+    const [date, readingId] = key.split('_');
+    const o = (S.state.opinions || []).find((x) => x.date === date && x.readingId === readingId);
+    if (!o) { app.innerHTML = `<div class="card empty">Opinion introuvable.</div>`; return; }
+    const pastHTML = S.steelmansFor(date, readingId).map((s) => `<div class="card diary-entry"><div class="muted small">${esc(Dates.label(s.date))}</div><p>${esc(s.counterArgument)}</p></div>`).join('');
+    app.innerHTML = `
+      <header class="dhead"><button class="back" data-go="#/thinking/steelman">‹</button>
+        <div class="dhead-main"><span class="dicon big">⚔️</span>
+          <div><h1>${esc(o.title)}</h1><span class="muted small">${esc(o.theme)}</span></div></div></header>
+      <div class="card"><h3 class="lb">🗣️ Ta position (${esc(Dates.label(o.date))})</h3><p class="lesson-theory">${esc(o.text)}</p></div>
+      <form id="steelman-form" class="stack">
+        <h2 class="section">⚔️ Écris le meilleur argument adverse</h2>
+        <p class="muted small">Pas une caricature — la version la plus forte et honnête de la thèse opposée.</p>
+        <textarea name="text" rows="5" placeholder="Le meilleur contre-argument…"></textarea>
+        <button class="btn primary block" type="submit">Enregistrer</button>
+      </form>
+      ${pastHTML}`;
+  }
+
+  function viewCoherence() {
+    nav.hidden = false;
+    const opinions = S.state.opinions || [];
+    const byTheme = {};
+    opinions.forEach((o) => { (byTheme[o.theme] = byTheme[o.theme] || []).push(o); });
+    const themesHTML = Object.keys(byTheme).length ? Object.keys(byTheme).map((theme) => {
+      const items = byTheme[theme].slice().reverse().map((o) => `<div class="card diary-entry"><div class="muted small">${esc(Dates.label(o.date))} · ${esc(o.title)}</div><p>${esc(o.text)}</p></div>`).join('');
+      return `<h2 class="section">${esc(theme)} (${byTheme[theme].length})</h2>${items}`;
+    }).join('') : `<div class="card empty">Aucune opinion enregistrée pour l'instant. Écris-en via la Lecture du jour.</div>`;
+    app.innerHTML = `
+      <header class="dhead"><button class="back" data-go="#/thinking">‹</button>
+        <div class="dhead-main"><span class="dicon big">🧭</span>
+          <div><h1>Ma cohérence</h1><span class="muted small">Tes opinions, groupées par thème</span></div></div></header>
+      <div class="card">Relis tes positions sur un même thème d'un bloc. Se contredisent-elles, ou se sont-elles affinées ? L'app ne détecte rien automatiquement — c'est à toi de juger, en toute honnêteté.</div>
+      ${themesHTML}`;
+  }
+
+  /* ======================================================
      RÉVISIONS
      ====================================================== */
   function viewReview(mode) {
@@ -1652,6 +1756,12 @@
     else if (root==='models') { if (parts[1]) viewMentalModel(parts[1]); else viewMentalModels(); }
     else if (root==='biases') { if (parts[1]) viewBias(parts[1]); else viewBiases(); }
     else if (root==='victories') viewVictories();
+    else if (root==='thinking') {
+      if (parts[1]==='essay') viewEssay();
+      else if (parts[1]==='steelman') { if (parts[2]) viewSteelman(parts[2]); else viewSteelmanHub(); }
+      else if (parts[1]==='coherence') viewCoherence();
+      else viewThinking();
+    }
     else if (root==='tools')  viewTools();
     else if (root==='settings') viewSettings();
     else viewToday();
@@ -1962,6 +2072,24 @@
       if (!text) { render(); return; }
       const r=S.addVictory(text);
       afterMutation(r); toast(`Victoire enregistrée · +${r.xp} XP`); e.target.reset(); render(); return;
+    }
+    if (e.target.id==='essay-form') {
+      const { prompt } = essayOfWeek();
+      const fd=new FormData(e.target);
+      const text=(fd.get('text')||'').trim();
+      if (!text) { render(); return; }
+      const r=S.addEssay(prompt.id, text);
+      afterMutation(r); toast(`Essai enregistré · +${r.xp} XP`); e.target.reset(); render(); return;
+    }
+    if (e.target.id==='steelman-form') {
+      const key=location.hash.split('/')[3];
+      const [date, readingId]=key.split('_');
+      const o=(S.state.opinions||[]).find((x)=>x.date===date&&x.readingId===readingId);
+      const fd=new FormData(e.target);
+      const text=(fd.get('text')||'').trim();
+      if (!text||!o) { render(); return; }
+      const r=S.addSteelman(o, text);
+      afterMutation(r); toast(`Enregistré · +${r.xp} XP`); e.target.reset(); render(); return;
     }
     if (e.target.id==='note-form') {
       const fd=new FormData(e.target);
