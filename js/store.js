@@ -84,7 +84,8 @@
       city:{ buildings:{} }, courseProgress:{ lessons:{} },
       earTraining:{ attempts:{} }, improJournal:[], notes:[], calendar:{ events:[] },
       exercises:{ stats:{}, dailyLog:[] }, calibration:{ attempts:[] }, mentalModels:{ journal:[] },
-      biasJournal:[], victories:[], essays:[], steelmans:[] };
+      biasJournal:[], victories:[], essays:[], steelmans:[],
+      speaking:{ log:[] }, applications:[], interviewLog:[] };
   }
 
   /* ---------- Persistance ---------- */
@@ -125,6 +126,10 @@
       if (!s.victories) s.victories = [];
       if (!s.essays) s.essays = [];
       if (!s.steelmans) s.steelmans = [];
+      if (!s.speaking) s.speaking = { log:[] };
+      if (!s.speaking.log) s.speaking.log = [];
+      if (!s.applications) s.applications = [];
+      if (!s.interviewLog) s.interviewLog = [];
       return s;
     } catch { return freshState(); }
   }
@@ -212,6 +217,33 @@
   function xpEarnedToday() {
     const t = Dates.today();
     return state.log.filter((l) => l.date === t).reduce((a, l) => a + (l.xp || 0), 0);
+  }
+
+  /* ---------- Bilan hebdo : activité + corrélation humeur×activité ---------- */
+  const MOOD_SCORE = { '😄':5, '🔥':5, '🙂':4, '😐':3, '😕':2, '😤':2, '😞':1, '😴':2 };
+  function activityReport(daysBack, offsetDays) {
+    daysBack = daysBack || 7; offsetDays = offsetDays || 0;
+    const end = Dates.addDays(Dates.today(), -offsetDays);
+    const start = Dates.addDays(end, -(daysBack - 1));
+    const logs = (state.log || []).filter((l) => l.date >= start && l.date <= end);
+    const diaryEntries = (state.diary || []).filter((d) => d.date >= start && d.date <= end);
+    const xpByDiscipline = {};
+    logs.forEach((l) => { xpByDiscipline[l.disciplineId] = (xpByDiscipline[l.disciplineId] || 0) + (l.xp || 0); });
+    const activeDays = new Set(logs.map((l) => l.date));
+    const topDiscipline = Object.keys(xpByDiscipline).sort((a, b) => xpByDiscipline[b] - xpByDiscipline[a])[0] || null;
+    const moodByDay = {};
+    diaryEntries.forEach((d) => { if (d.mood && MOOD_SCORE[d.mood]) moodByDay[d.date] = MOOD_SCORE[d.mood]; });
+    const activeMoods = [], inactiveMoods = [];
+    Object.keys(moodByDay).forEach((date) => { (activeDays.has(date) ? activeMoods : inactiveMoods).push(moodByDay[date]); });
+    const avg = (arr) => arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : null;
+    return {
+      start, end, daysBack,
+      activeDaysCount: activeDays.size,
+      totalXp: logs.reduce((a, l) => a + (l.xp || 0), 0),
+      xpByDiscipline, topDiscipline,
+      avgMoodActive: avg(activeMoods), avgMoodInactive: avg(inactiveMoods),
+      moodSampleActive: activeMoods.length, moodSampleInactive: inactiveMoods.length,
+    };
   }
 
   /* Coach v2 : tient compte des quêtes du jour ET de la phase de dureté (progressive). */
@@ -583,11 +615,45 @@
   function steelmansAll() { return (state.steelmans || []).slice().reverse(); }
   function steelmansFor(opinionDate, readingId) { return (state.steelmans || []).filter((s) => s.opinionDate === opinionDate && s.readingId === readingId); }
 
+  /* ---------- Prise de parole (l'audio n'est jamais persisté, seule l'auto-évaluation l'est) ---------- */
+  function addSpeakingEntry(topic, rating) {
+    state.speaking = state.speaking || { log:[] };
+    state.speaking.log.push({ date: Dates.today(), topic, rating });
+    const xp = Math.round(6 * H.streakMultiplier());
+    return { xp, ...addXp('lettres', xp, 'speaking') }; // save inclus
+  }
+  function speakingLogAll() { return ((state.speaking && state.speaking.log) || []).slice().reverse(); }
+
+  /* ---------- Cockpit stage : pipeline de candidatures ---------- */
+  function applicationsAll() { return (state.applications || []).slice().reverse(); }
+  function addApplication(company, status) {
+    state.applications = state.applications || [];
+    state.applications.push({ id:'app_'+Date.now()+'_'+Math.random().toString(36).slice(2,6), company, status: status || 'contacter', date: Dates.today() });
+    save();
+  }
+  function updateApplicationStatus(id, status) {
+    const a = (state.applications || []).find((x) => x.id === id);
+    if (a) { a.status = status; save(); }
+  }
+  function removeApplication(id) { state.applications = (state.applications || []).filter((a) => a.id !== id); save(); }
+
+  /* ---------- Simulateur d'entretien (noté comme les Exercices, sélection pondérée réutilisée) ---------- */
+  function recordInterviewAttempt(questionId, category, quality) {
+    state.interviewLog = state.interviewLog || [];
+    state.interviewLog.push({ date: Dates.today(), questionId, category, quality });
+    save();
+  }
+  function interviewLogAll() { return (state.interviewLog || []).slice().reverse(); }
+  function interviewStatsFor(questionId) {
+    const entries = (state.interviewLog || []).filter((l) => l.questionId === questionId);
+    return { count: entries.length, sumQuality: entries.reduce((a, l) => a + l.quality, 0) };
+  }
+
   window.Store = {
     get state() { return state; },
     Dates, H,
     xpForLevel, levelFromXp, levelProgress,
-    adaptiveTarget, coachMessage, xpEarnedToday,
+    adaptiveTarget, coachMessage, xpEarnedToday, activityReport,
     daysSinceStart, hardnessPhase, habitDone, setHabit, dailyProgress,
     questProgress, toggleQuestStep,
     addSession, addXp, setCefr, addGoal, toggleGoal, removeGoal,
@@ -603,6 +669,9 @@
     victoriesAll, victoryOfToday, addVictory,
     essayWeekKey, essayDoneThisWeek, addEssay, essaysAll,
     addSteelman, steelmansAll, steelmansFor,
+    addSpeakingEntry, speakingLogAll,
+    applicationsAll, addApplication, updateApplicationStatus, removeApplication,
+    recordInterviewAttempt, interviewLogAll, interviewStatsFor,
     exportJSON, importJSON,
     /* Profils */
     getProfiles, createProfile, deleteProfile, switchProfile,

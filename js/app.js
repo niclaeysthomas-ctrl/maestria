@@ -9,6 +9,7 @@
   const { MENTAL_MODELS } = window.MAESTRIA_MODELS;
   const { COGNITIVE_BIASES } = window.MAESTRIA_BIASES;
   const { ESSAY_PROMPTS } = window.MAESTRIA_THINKING;
+  const { INTERVIEW_QUESTIONS } = window.MAESTRIA_INTERVIEW;
   const S = window.Store;
   const { Dates, H } = S;
 
@@ -22,6 +23,8 @@
   let studyDeckId = null, studyIdx = 0, studyFlip = false;
   let earMode = null, earExercise = null, earAnswered = false, earChosen = null, earSessionScore = { correct:0, total:0 };
   let exerciseQueue = null, exerciseIdx = 0, exerciseRevealed = false, exerciseGraded = false, exerciseMode = 'today', exerciseLastQuality = null, exerciseConfidence = null;
+  let mediaRecorder = null, recordedChunks = [], speakingRating = null, speakingAudioUrl = null;
+  let interviewQueue = null, interviewCategory = null, interviewRevealed = false, interviewGraded = false, interviewLastQuality = null;
 
   /* Mélange un tableau (copie, Fisher-Yates) — pour l'entraînement libre. */
   function shuffle(arr) {
@@ -261,6 +264,7 @@
 
       <h2 class="section">🎯 Tes boss</h2>
       ${questsHTML}
+      <button class="btn block" data-go="#/stage">💼 Cockpit stage — candidatures & entretien</button>
 
       <h2 class="section">💡 Séances suggérées</h2>
       ${sugHTML}
@@ -361,6 +365,8 @@
           <div class="xpbar slim"><div class="xpbar-fill" style="width:${Math.min(100,(tgt.done/tgt.target)*100)}%;background:#a78bfa"></div></div>
         </div>
       </div>
+
+      <button class="card cta" data-go="#/weekly">📊 Bilan hebdo — activité & humeur →</button>
 
       ${due>0?`<button class="card cta" data-go="#/review">🧠 ${due} révision${due>1?'s':''} à faire aujourd'hui →</button>`:''}
 
@@ -738,6 +744,7 @@
       <button class="card cta" data-go="#/notes">📒 Mes notes — cahier du jour →</button>
       <button class="card cta" data-go="#/calendar">📅 Calendrier — toute l'année →</button>
       <button class="card cta" data-go="#/victories">🏆 Mes victoires →</button>
+      <button class="card cta" data-go="#/speaking">🎙️ Prise de parole →</button>
       <button class="btn block" data-go="#/diary/bilan">📅 Bilan des 14 derniers jours →</button>
       <form id="diary-form" class="stack">
         <h2 class="section">${todayEntry ? 'Modifier' : 'Aujourd\'hui'} · ${esc(Dates.label(today))}</h2>
@@ -1277,6 +1284,159 @@
   }
 
   /* ======================================================
+     BILAN HEBDO (activité + corrélation humeur×activité)
+     ====================================================== */
+  function viewWeekly() {
+    nav.hidden = false;
+    const now = S.activityReport(7, 0), prev = S.activityReport(7, 7);
+    const xpDelta = now.totalXp - prev.totalXp;
+    const daysDelta = now.activeDaysCount - prev.activeDaysCount;
+    const topName = now.topDiscipline ? (DISCIPLINES[now.topDiscipline] ? DISCIPLINES[now.topDiscipline].name : now.topDiscipline) : null;
+    const disciplineRows = Object.keys(now.xpByDiscipline).sort((a, b) => now.xpByDiscipline[b] - now.xpByDiscipline[a])
+      .map((id) => { const cfg = DISCIPLINES[id]; return `<div class="calib-row good"><span>${cfg ? cfg.icon + ' ' + esc(cfg.name) : esc(id)}</span><span>${now.xpByDiscipline[id]} XP</span></div>`; }).join('');
+
+    let moodInsight;
+    if (now.moodSampleActive >= 2 && now.moodSampleInactive >= 2) {
+      const diff = now.avgMoodActive - now.avgMoodInactive;
+      moodInsight = diff > 0.4
+        ? `📈 Ton humeur moyenne est nettement meilleure les jours actifs (${now.avgMoodActive.toFixed(1)}/5) que les jours inactifs (${now.avgMoodInactive.toFixed(1)}/5). L'activité semble te faire du bien.`
+        : diff < -0.4
+          ? `📉 Ton humeur moyenne est plus basse les jours actifs (${now.avgMoodActive.toFixed(1)}/5) que les jours inactifs (${now.avgMoodInactive.toFixed(1)}/5) — vaut le coup d'y prêter attention.`
+          : `➡️ Pas de lien net cette semaine entre activité et humeur (${now.avgMoodActive.toFixed(1)}/5 actif vs ${now.avgMoodInactive.toFixed(1)}/5 inactif).`;
+    } else {
+      moodInsight = `Pas encore assez de notes d'humeur cette semaine (${now.moodSampleActive + now.moodSampleInactive}/7) pour une vraie corrélation. Note ton humeur dans le Journal les jours qui suivent.`;
+    }
+
+    app.innerHTML = `
+      <header class="dhead"><button class="back" data-go="#/">‹</button>
+        <div class="dhead-main"><span class="dicon big">📊</span>
+          <div><h1>Bilan hebdo</h1><span class="muted small">7 derniers jours vs 7 précédents</span></div></div></header>
+      <div class="card">
+        <div class="calib-row good"><span>Jours actifs</span><span>${now.activeDaysCount}/7 ${daysDelta !== 0 ? `(${daysDelta > 0 ? '+' : ''}${daysDelta} vs sem. dernière)` : ''}</span></div>
+        <div class="calib-row good"><span>XP gagnée</span><span>${now.totalXp} ${xpDelta !== 0 ? `(${xpDelta > 0 ? '+' : ''}${xpDelta} vs sem. dernière)` : ''}</span></div>
+        ${topName ? `<div class="calib-row good"><span>Discipline dominante</span><span>${esc(topName)}</span></div>` : ''}
+      </div>
+      <h2 class="section">🧠 Humeur × activité</h2>
+      <div class="card calib-verdict">${moodInsight}</div>
+      ${disciplineRows ? `<h2 class="section">📚 XP par discipline</h2>${disciplineRows}` : ''}`;
+  }
+
+  /* ======================================================
+     PRISE DE PAROLE (enregistrement audio éphémère + auto-évaluation)
+     ====================================================== */
+  const CLARITY_LEVELS = [
+    { v:0, label:'😕 Confus' },
+    { v:1, label:'🤔 Hésitant' },
+    { v:2, label:'🙂 Clair' },
+    { v:3, label:'🎯 Limpide' },
+  ];
+
+  function viewSpeaking() {
+    nav.hidden = false;
+    const supported = typeof navigator !== 'undefined' && navigator.mediaDevices && typeof window.MediaRecorder !== 'undefined';
+    const suggestions = [...MENTAL_MODELS.slice(0, 5).map((m) => m.name), ...COGNITIVE_BIASES.slice(0, 5).map((b) => b.name)];
+    const log = S.speakingLogAll();
+    const logHTML = log.map((e) => {
+      const c = CLARITY_LEVELS.find((x) => x.v === e.rating);
+      return `<div class="card diary-entry"><div class="muted small">${esc(Dates.label(e.date))} · ${c ? c.label : ''}</div><p>${esc(e.topic)}</p></div>`;
+    }).join('');
+    const clarityHTML = CLARITY_LEVELS.map((c) => `<button type="button" class="btn" data-clarity="${c.v}">${c.label}</button>`).join('');
+
+    app.innerHTML = `
+      <header class="dhead"><button class="back" data-go="#/">‹</button>
+        <div class="dhead-main"><span class="dicon big">🎙️</span>
+          <div><h1>Prise de parole</h1><span class="muted small">Explique à voix haute, réécoute-toi, progresse</span></div></div></header>
+      <div class="card">🎯 Explique un concept comme si tu l'enseignais — la méthode Feynman. Choisis un sujet (modèle mental, biais, ou libre), enregistre-toi, réécoute-toi, puis évalue ta clarté.
+        <p class="muted small" style="margin-top:8px">Honnêteté : l'enregistrement n'est jamais sauvegardé (ça saturerait vite la mémoire de ton navigateur) — seule ton auto-évaluation reste dans ton historique.</p></div>
+      ${!supported ? `<div class="card empty">Ton navigateur ne supporte pas l'enregistrement ici. Entraîne-toi quand même à voix haute, puis note ton auto-évaluation ci-dessous.</div>` : ''}
+      <div class="card">
+        <h3 class="lb">🗣️ Sujet</h3>
+        <input type="text" id="speaking-topic" list="speaking-suggestions" placeholder="Choisis ou tape un sujet…">
+        <datalist id="speaking-suggestions">${suggestions.map((s) => `<option value="${esc(s)}">`).join('')}</datalist>
+      </div>
+      ${supported ? `
+      <div class="card">
+        <div class="row">
+          <button class="btn primary block" id="rec-start" data-rec-start>🔴 Démarrer l'enregistrement</button>
+          <button class="btn block" id="rec-stop" data-rec-stop disabled>⏹️ Arrêter</button>
+        </div>
+        <audio id="rec-player" controls style="display:none;width:100%;margin-top:10px"></audio>
+      </div>` : ''}
+      <form id="speaking-form" class="stack">
+        <p class="muted small">Comment évalues-tu ta clarté ?</p>
+        <div class="row quality-row">${clarityHTML}</div>
+        <button class="btn primary block" type="submit" id="speaking-submit" disabled>Enregistrer dans mon historique</button>
+      </form>
+      <h2 class="section">🕓 Historique</h2>
+      ${logHTML || `<div class="card empty">Rien encore. Lance ta première prise de parole.</div>`}`;
+  }
+
+  /* ======================================================
+     COCKPIT STAGE (candidatures + simulateur d'entretien)
+     ====================================================== */
+  const APP_STATUS_LABELS = { contacter:'À contacter', envoyee:'Envoyée', entretien:'Entretien obtenu', reponse:'Réponse reçue' };
+
+  function viewStageCockpit() {
+    nav.hidden = false;
+    const apps = S.applicationsAll();
+    const appsHTML = apps.map((a) => `
+      <div class="card app-row">
+        <div class="app-row-head"><b>${esc(a.company)}</b><button class="note-del" data-app-del="${a.id}" aria-label="Supprimer">✕</button></div>
+        <select data-app-status="${a.id}">${Object.keys(APP_STATUS_LABELS).map((s) => `<option value="${s}" ${a.status === s ? 'selected' : ''}>${APP_STATUS_LABELS[s]}</option>`).join('')}</select>
+        <span class="muted small">Ajoutée le ${esc(Dates.label(a.date))}</span>
+      </div>`).join('');
+    app.innerHTML = `
+      <header class="dhead"><button class="back" data-go="#/">‹</button>
+        <div class="dhead-main"><span class="dicon big">💼</span>
+          <div><h1>Cockpit stage</h1><span class="muted small">${apps.length} candidature(s)</span></div></div></header>
+      <button class="card cta" data-go="#/stage/interview">🎤 Simulateur d'entretien →</button>
+      <h2 class="section">📋 Mes candidatures</h2>
+      <form id="app-form" class="stack">
+        <input type="text" name="company" placeholder="Nom de l'entreprise">
+        <select name="status">${Object.keys(APP_STATUS_LABELS).map((s) => `<option value="${s}">${APP_STATUS_LABELS[s]}</option>`).join('')}</select>
+        <button class="btn primary block" type="submit">Ajouter</button>
+      </form>
+      ${appsHTML || `<div class="card empty">Aucune candidature enregistrée pour l'instant.</div>`}`;
+  }
+
+  function viewInterviewHub() {
+    nav.hidden = false;
+    interviewQueue = null;
+    app.innerHTML = `
+      <header class="dhead"><button class="back" data-go="#/stage">‹</button>
+        <div class="dhead-main"><span class="dicon big">🎤</span>
+          <div><h1>Simulateur d'entretien</h1><span class="muted small">Structure + auto-évaluation, pas de réponse toute faite</span></div></div></header>
+      <button class="card cta" data-go="#/stage/interview/technique">💹 Questions techniques →</button>
+      <button class="card cta" data-go="#/stage/interview/comportement">🗣️ Questions comportementales →</button>`;
+  }
+
+  function viewInterviewPractice(category) {
+    nav.hidden = false;
+    const list = INTERVIEW_QUESTIONS[category] || [];
+    if (!list.length) { app.innerHTML = `<div class="card empty">Aucune question pour l'instant.</div>`; return; }
+    if (interviewQueue === null || interviewCategory !== category) {
+      interviewCategory = category;
+      const picked = window.EarTraining.pickWeighted(list, (it) => { const st = S.interviewStatsFor(it.id); return { correct: st.sumQuality, total: st.count * 3 }; });
+      interviewQueue = [picked.id]; interviewRevealed = false; interviewGraded = false; interviewLastQuality = null;
+    }
+    const q = list.find((x) => x.id === interviewQueue[0]);
+    const { QUALITY_LEVELS } = window.MAESTRIA_EXERCISES;
+    const qualityHTML = QUALITY_LEVELS.map((ql) => `<button class="btn ${interviewGraded && interviewLastQuality === ql.v ? 'primary' : ''}" ${interviewGraded ? 'disabled' : ''} data-iv-quality="${ql.v}">${ql.label}</button>`).join('');
+    app.innerHTML = `
+      <header class="dhead"><button class="back" data-go="#/stage/interview">‹</button>
+        <div class="dhead-main"><span class="dicon big">🎤</span>
+          <div><h1>${category === 'technique' ? 'Questions techniques' : 'Questions comportementales'}</h1></div></div></header>
+      <div class="card exercise-card">
+        <p class="exercise-prompt">${esc(q.q)}</p>
+        ${!interviewRevealed ? `<button class="btn primary block" data-reveal-interview>Révéler le conseil de structure</button>` : `
+          <div class="exercise-solution"><b>Structure conseillée</b><p>${esc(q.tip)}</p></div>
+          ${!interviewGraded ? `<p class="muted small">Comment évalues-tu ta réponse orale ?</p><div class="row quality-row">${qualityHTML}</div>` : ''}`}
+      </div>
+      ${interviewGraded ? `<button class="card cta" data-iv-next="${category}">→ Question suivante →</button>` : ''}
+      <button class="btn block" data-go="#/stage/interview">‹ Changer de catégorie</button>`;
+  }
+
+  /* ======================================================
      RÉVISIONS
      ====================================================== */
   function viewReview(mode) {
@@ -1762,6 +1922,9 @@
       else if (parts[1]==='coherence') viewCoherence();
       else viewThinking();
     }
+    else if (root==='weekly') viewWeekly();
+    else if (root==='speaking') viewSpeaking();
+    else if (root==='stage') { if (parts[1]==='interview') { if (parts[2]) viewInterviewPractice(parts[2]); else viewInterviewHub(); } else viewStageCockpit(); }
     else if (root==='tools')  viewTools();
     else if (root==='settings') viewSettings();
     else viewToday();
@@ -1893,6 +2056,71 @@
     if (e.target.closest('[data-cal-ics]')) { download('maestria-calendrier.ics', S.exportCalendarICS(), 'text/calendar'); toast('Calendrier exporté (.ics).'); return; }
     const calDel=e.target.closest('[data-cal-del]');
     if (calDel) { S.removeCalendarEvent(calDel.dataset.calDel); render(); return; }
+
+    /* Prise de parole : démarrer/arrêter l'enregistrement, choisir la clarté (pas de re-render : état audio live) */
+    if (e.target.closest('[data-rec-start]')) {
+      if (!(navigator.mediaDevices && window.MediaRecorder)) { toast('Enregistrement non supporté sur ce navigateur.'); return; }
+      navigator.mediaDevices.getUserMedia({ audio:true }).then((stream) => {
+        recordedChunks = [];
+        mediaRecorder = new MediaRecorder(stream);
+        mediaRecorder.ondataavailable = (ev) => { if (ev.data.size > 0) recordedChunks.push(ev.data); };
+        mediaRecorder.onstop = () => {
+          stream.getTracks().forEach((t) => t.stop());
+          const blob = new Blob(recordedChunks, { type:'audio/webm' });
+          if (speakingAudioUrl) URL.revokeObjectURL(speakingAudioUrl);
+          speakingAudioUrl = URL.createObjectURL(blob);
+          const player = document.getElementById('rec-player');
+          if (player) { player.src = speakingAudioUrl; player.style.display = 'block'; }
+        };
+        mediaRecorder.start();
+        toast('Enregistrement démarré…');
+        const startBtn = document.getElementById('rec-start'), stopBtn = document.getElementById('rec-stop');
+        if (startBtn) startBtn.disabled = true; if (stopBtn) stopBtn.disabled = false;
+      }).catch(() => toast('Micro refusé ou indisponible.'));
+      return;
+    }
+    if (e.target.closest('[data-rec-stop]')) {
+      if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+      const startBtn = document.getElementById('rec-start'), stopBtn = document.getElementById('rec-stop');
+      if (startBtn) startBtn.disabled = false; if (stopBtn) stopBtn.disabled = true;
+      return;
+    }
+    const clarityBtn=e.target.closest('[data-clarity]');
+    if (clarityBtn) {
+      speakingRating = Number(clarityBtn.dataset.clarity);
+      document.querySelectorAll('[data-clarity]').forEach((b) => b.classList.toggle('primary', Number(b.dataset.clarity) === speakingRating));
+      const submitBtn = document.getElementById('speaking-submit'); if (submitBtn) submitBtn.disabled = false;
+      return;
+    }
+
+    /* Cockpit stage : suppression d'une candidature */
+    const appDel=e.target.closest('[data-app-del]');
+    if (appDel) { S.removeApplication(appDel.dataset.appDel); render(); return; }
+
+    /* Simulateur d'entretien : révéler, noter, question suivante (pondérée par faiblesse) */
+    if (e.target.closest('[data-reveal-interview]')) { interviewRevealed=true; render(); return; }
+    const ivQuality=e.target.closest('[data-iv-quality]');
+    if (ivQuality && !interviewGraded) {
+      const category=location.hash.split('/')[3];
+      const list=INTERVIEW_QUESTIONS[category]||[];
+      const q=list.find((x)=>x.id===interviewQueue[0]);
+      const quality=Number(ivQuality.dataset.ivQuality);
+      S.recordInterviewAttempt(q.id, category, quality);
+      interviewGraded=true; interviewLastQuality=quality;
+      const ql=window.MAESTRIA_EXERCISES.QUALITY_LEVELS.find((x)=>x.v===quality);
+      const xp=Math.round((ql.xp||0)*H.streakMultiplier());
+      if (xp>0) { const r=S.addXp('economie', xp, 'interview'); afterMutation(r); toast(`${ql.label} · +${xp} XP`); }
+      else toast(ql.label);
+      render(); return;
+    }
+    const ivNext=e.target.closest('[data-iv-next]');
+    if (ivNext) {
+      const category=ivNext.dataset.ivNext;
+      const list=INTERVIEW_QUESTIONS[category]||[];
+      const picked=window.EarTraining.pickWeighted(list, (it)=>{ const st=S.interviewStatsFor(it.id); return { correct:st.sumQuality, total:st.count*3 }; });
+      interviewQueue=[picked.id]; interviewRevealed=false; interviewGraded=false; interviewLastQuality=null;
+      render(); return;
+    }
 
     /* Démarrer une leçon : inscrire des cartes dans le SRS */
     const lesson=e.target.closest('[data-lesson]');
@@ -2091,6 +2319,22 @@
       const r=S.addSteelman(o, text);
       afterMutation(r); toast(`Enregistré · +${r.xp} XP`); e.target.reset(); render(); return;
     }
+    if (e.target.id==='speaking-form') {
+      const topicInput=document.getElementById('speaking-topic');
+      const topic=(topicInput && topicInput.value || '').trim() || 'Sujet libre';
+      if (speakingRating==null) { render(); return; }
+      const r=S.addSpeakingEntry(topic, speakingRating);
+      if (speakingAudioUrl) { URL.revokeObjectURL(speakingAudioUrl); speakingAudioUrl=null; }
+      speakingRating=null; recordedChunks=[]; mediaRecorder=null;
+      afterMutation(r); toast(`Enregistré · +${r.xp} XP`); render(); return;
+    }
+    if (e.target.id==='app-form') {
+      const fd=new FormData(e.target);
+      const company=(fd.get('company')||'').trim(), status=fd.get('status');
+      if (!company) { render(); return; }
+      S.addApplication(company, status);
+      toast('Candidature ajoutée.'); e.target.reset(); render(); return;
+    }
     if (e.target.id==='note-form') {
       const fd=new FormData(e.target);
       const text=(fd.get('text')||'').trim();
@@ -2109,6 +2353,9 @@
   });
 
   document.addEventListener('change', (e) => {
+    if (e.target.dataset&&e.target.dataset.appStatus) {
+      S.updateApplicationStatus(e.target.dataset.appStatus, e.target.value); toast('Statut mis à jour.'); return;
+    }
     if (e.target.dataset&&e.target.dataset.cefr) {
       const id=location.hash.split('/')[2];
       S.setCefr(id,e.target.dataset.cefr,e.target.value==='—'?'':e.target.value); toast('Niveau mis à jour.'); return;
