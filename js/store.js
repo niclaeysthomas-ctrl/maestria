@@ -697,6 +697,19 @@
     return { total: resolved.length, buckets, pending: (state.predictions || []).filter((p) => !p.resolved).length };
   }
 
+  /* ---------- Profil de pensée : comptages purs (les titres sont résolus côté app.js, qui a le contenu) ---------- */
+  function thinkingProfileStats() {
+    return {
+      opinions: (state.opinions || []).length,
+      debatesDone: new Set((state.debateJournal || []).map((e) => e.debateId)).size,
+      essays: (state.essays || []).length,
+      modelsApplied: new Set(((state.mentalModels && state.mentalModels.journal) || []).map((e) => e.modelId)).size,
+      biasesSpotted: new Set((state.biasJournal || []).map((e) => e.biasId)).size,
+      fallaciesSpotted: new Set((state.fallacyJournal || []).map((e) => e.fallacyId)).size,
+      steelmans: (state.steelmans || []).length,
+    };
+  }
+
   window.Store = {
     get state() { return state; },
     Dates, H,
@@ -723,6 +736,7 @@
     debateDone, debateEntriesFor, addDebateEntry,
     fallacyDone, fallacyEntriesFor, addFallacyEntry,
     predictionsAll, addPrediction, resolvePrediction, removePrediction, predictionStats,
+    thinkingProfileStats,
     exportJSON, importJSON,
     /* Profils */
     getProfiles, createProfile, deleteProfile, switchProfile,

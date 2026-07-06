@@ -1244,11 +1244,71 @@
       <header class="dhead"><button class="back" data-go="#/">‹</button>
         <div class="dhead-main"><span class="dicon big">🏛️</span>
           <div><h1>Atelier de pensée</h1><span class="muted small">Construis des positions solides, pas juste des opinions</span></div></div></header>
+      <button class="card cta" data-go="#/thinking/profile">📔 Mon profil de pensée →</button>
       <button class="card cta" data-go="#/thinking/essay">✍️ Essai hebdomadaire ${done ? '<span class="badge">✓ fait cette semaine</span>' : ''} →</button>
       <button class="card cta" data-go="#/thinking/steelman">⚔️ Steel-man — défends l'avis adverse →</button>
       <button class="card cta" data-go="#/thinking/coherence">🧭 Vérifier ma cohérence →</button>
       <button class="card cta" data-go="#/thinking/debates">⚖️ Grands débats — les deux camps →</button>
       <button class="card cta" data-go="#/thinking/fallacies">🧩 Sophismes en action →</button>`;
+  }
+
+  /* ======================================================
+     MON PROFIL DE PENSÉE (synthèse de tout l'Atelier)
+     ====================================================== */
+  function buildThinkingTimeline(limit) {
+    const items = [];
+    (S.state.opinions || []).forEach((o) => items.push({ date:o.date, icon:'📖', kind:'Opinion', title:o.title, text:o.text }));
+    (S.state.debateJournal || []).forEach((e) => {
+      const d = DEBATES.find((x) => x.id === e.debateId);
+      items.push({ date:e.date, icon: d ? d.icon : '⚖️', kind: d && d.type === 'duel' ? 'Duel' : 'Débat', title: d ? d.topic : '', text:e.reasoning });
+    });
+    (S.state.essays || []).forEach((e) => {
+      const p = ESSAY_PROMPTS.find((x) => x.id === e.promptId);
+      items.push({ date:e.date, icon:'✍️', kind:'Essai', title: p ? p.title : '', text:e.text });
+    });
+    ((S.state.mentalModels && S.state.mentalModels.journal) || []).forEach((e) => {
+      const m = MENTAL_MODELS.find((x) => x.id === e.modelId);
+      items.push({ date:e.date, icon: m ? m.icon : '🧰', kind:'Modèle mental', title: m ? m.name : '', text:e.text });
+    });
+    (S.state.biasJournal || []).forEach((e) => {
+      const b = COGNITIVE_BIASES.find((x) => x.id === e.biasId);
+      items.push({ date:e.date, icon: b ? b.icon : '🎭', kind:'Biais repéré', title: b ? b.name : '', text:e.situation });
+    });
+    (S.state.fallacyJournal || []).forEach((e) => {
+      const f = LOGICAL_FALLACIES.find((x) => x.id === e.fallacyId);
+      items.push({ date:e.date, icon: f ? f.icon : '🧩', kind:'Sophisme repéré', title: f ? f.name : '', text:e.example });
+    });
+    (S.state.steelmans || []).forEach((e) => items.push({ date:e.date, icon:'⚔️', kind:'Steel-man', title:e.opinionTitle, text:e.counterArgument }));
+    items.sort((a, b) => b.date.localeCompare(a.date));
+    return limit ? items.slice(0, limit) : items;
+  }
+
+  function viewThinkingProfile() {
+    nav.hidden = false;
+    const stats = S.thinkingProfileStats();
+    const byTheme = {};
+    (S.state.opinions || []).forEach((o) => { (byTheme[o.theme] = byTheme[o.theme] || []).push(o); });
+    const themesHTML = Object.keys(byTheme).sort((a, b) => byTheme[b].length - byTheme[a].length)
+      .map((t) => `<span class="badge">${esc(t)} · ${byTheme[t].length}</span>`).join(' ');
+    const timeline = buildThinkingTimeline(15);
+    const timelineHTML = timeline.map((it) => `
+      <div class="card diary-entry"><div class="muted small">${it.icon} ${esc(it.kind)}${it.title ? ' · ' + esc(it.title) : ''} · ${esc(Dates.label(it.date))}</div><p>${esc(it.text)}</p></div>`).join('');
+    app.innerHTML = `
+      <header class="dhead"><button class="back" data-go="#/thinking">‹</button>
+        <div class="dhead-main"><span class="dicon big">📔</span>
+          <div><h1>Mon profil de pensée</h1><span class="muted small">Tout ce que tu as écrit, réuni</span></div></div></header>
+      <div class="card">
+        <div class="calib-row good"><span>📖 Opinions écrites</span><span>${stats.opinions}</span></div>
+        <div class="calib-row good"><span>⚖️ Débats/duels synthétisés</span><span>${stats.debatesDone}</span></div>
+        <div class="calib-row good"><span>✍️ Essais rédigés</span><span>${stats.essays}</span></div>
+        <div class="calib-row good"><span>🧰 Modèles mentaux appliqués</span><span>${stats.modelsApplied}</span></div>
+        <div class="calib-row good"><span>🎭 Biais repérés</span><span>${stats.biasesSpotted}</span></div>
+        <div class="calib-row good"><span>🧩 Sophismes reconnus</span><span>${stats.fallaciesSpotted}</span></div>
+        <div class="calib-row good"><span>⚔️ Steel-mans écrits</span><span>${stats.steelmans}</span></div>
+      </div>
+      ${themesHTML ? `<h2 class="section">🗂️ Tes thèmes</h2><div class="card">${themesHTML}</div>` : ''}
+      <h2 class="section">🕓 Fil chronologique</h2>
+      ${timelineHTML || `<div class="card empty">Rien encore. Explore l'Atelier de pensée pour commencer à écrire.</div>`}`;
   }
 
   function viewEssay() {
@@ -2059,6 +2119,7 @@
       else if (parts[1]==='coherence') viewCoherence();
       else if (parts[1]==='debates') { if (parts[2]) viewDebate(parts[2]); else viewDebates(); }
       else if (parts[1]==='fallacies') { if (parts[2]) viewFallacy(parts[2]); else viewFallacies(); }
+      else if (parts[1]==='profile') viewThinkingProfile();
       else viewThinking();
     }
     else if (root==='weekly') viewWeekly();

@@ -180,6 +180,16 @@ const BADGES = [
     cond: (s) => (s.stats.reviewsDone || 0) >= 100 },
   { id: 'centurion',    name: 'Centurion',          icon: '🏛️', desc: '100 séances loggées.',
     cond: (s, h) => h.totalSessions(s) >= 100 },
+  { id: 'fallacy_master', name: 'Repéreur de sophismes', icon: '🧩', desc: 'Les 10 sophismes explorés.',
+    cond: (s) => new Set((s.fallacyJournal || []).map((e) => e.fallacyId)).size >= 10 },
+  { id: 'debate_master',  name: 'Grand débatteur',       icon: '⚖️', desc: 'Les 10 débats et duels synthétisés.',
+    cond: (s) => new Set((s.debateJournal || []).map((e) => e.debateId)).size >= 10 },
+  { id: 'models_master',  name: 'Philosophe en herbe',   icon: '🧰', desc: 'Les 10 modèles mentaux appliqués.',
+    cond: (s) => new Set(((s.mentalModels && s.mentalModels.journal) || []).map((e) => e.modelId)).size >= 10 },
+  { id: 'bias_master',    name: 'Traqueur de biais',     icon: '🎭', desc: 'Les 10 biais cognitifs repérés.',
+    cond: (s) => new Set((s.biasJournal || []).map((e) => e.biasId)).size >= 10 },
+  { id: 'well_calibrated', name: 'Bien calibré',         icon: '📡', desc: '10 prédictions réelles résolues.',
+    cond: (s) => (s.predictions || []).filter((p) => p.resolved).length >= 10 },
 ];
 
 const CAL_CATEGORIES = [
