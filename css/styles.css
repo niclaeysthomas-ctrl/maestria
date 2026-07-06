@@ -353,6 +353,9 @@ ul { list-style: none; padding: 0; margin: 0; }
 .debate-case { border-left: 4px solid var(--line); }
 .debate-case.debate-for { border-left-color: #10b981; }
 .debate-case.debate-against { border-left-color: #ef4444; }
+.debate-case.duel-a { border-left-color: #0ea5e9; }
+.debate-case.duel-b { border-left-color: #a78bfa; }
+.predict-row { padding: 12px 14px; }
 .debate-case .lb { margin-bottom: 10px; }
 .debate-case .lesson-theory { margin-bottom: 12px; }
 .debate-case .lesson-theory:last-child { margin-bottom: 0; }

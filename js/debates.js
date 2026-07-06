@@ -89,6 +89,66 @@ const DEBATES = [
       `Sans réduction réelle de la charge de travail totale, le risque est de concentrer la même quantité de travail sur 4 jours plus intenses, sans gain net de bien-être — juste un déplacement du problème.`,
       `Les expérimentations existantes concernent souvent des entreprises volontaires et déjà bien organisées, ce qui limite la capacité à généraliser leurs résultats à l'ensemble du tissu économique.`,
     ] },
+
+  { id:'duel1', icon:'⚖️', theme:'Histoire des idées', type:'duel',
+    topic:`Rawls contre Nozick : qu'est-ce qui fonde une société juste ?`,
+    question:`La justice se juge-t-elle sur le résultat (la répartition) ou sur le processus (comment chacun a acquis ce qu'il a) ?`,
+    forLabel:'🔵 John Rawls', againstLabel:'🟣 Robert Nozick',
+    forCase: [
+      `Imagine que tu ignores complètement quelle place tu occuperas dans la société — riche ou pauvre, doué ou non — un « voile d'ignorance ». Rawls avance qu'un individu rationnel, placé derrière ce voile, choisirait des règles qui protègent les plus défavorisés, car il pourrait lui-même s'y retrouver.`,
+      `De ce raisonnement découle le « principe de différence » : les inégalités ne sont justes que si elles profitent aussi, in fine, aux plus défavorisés de la société — pas seulement aux mieux placés.`,
+      `La justice, pour Rawls, se juge donc sur le résultat final : une répartition n'est légitime que si sa structure sert les plus vulnérables, indépendamment de comment on y est arrivé.`,
+    ],
+    againstCase: [
+      `Nozick répond que la justice ne se juge pas sur un résultat figé, mais sur le PROCESSUS : si chaque transfert de bien s'est fait librement et légitimement (par le travail, l'échange volontaire, le don), alors le résultat est juste, quelle que soit la répartition finale.`,
+      `Prendre de force à certains ce qu'ils ont légitimement acquis pour l'attribuer à d'autres, même au nom d'un « meilleur » résultat, revient à violer leur liberté et leur droit de propriété — un principe qui prime, pour lui, sur toute considération de répartition.`,
+      `Nozick illustre ceci avec l'exemple d'un joueur de basket que des millions de spectateurs paient librement pour voir jouer : sa fortune qui en résulte est juste, même si elle crée une grande inégalité, car chaque transaction qui y a mené était volontaire.`,
+    ] },
+
+  { id:'duel2', icon:'🌳', theme:'Histoire des idées', type:'duel',
+    topic:`Hobbes contre Rousseau : l'humain est-il naturellement dangereux ou pacifique ?`,
+    question:`Que se passerait-il sans aucune autorité ni société — l'état de nature est-il une guerre de tous contre tous, ou un état plutôt paisible ?`,
+    forLabel:'🔵 Thomas Hobbes', againstLabel:'🟣 Jean-Jacques Rousseau',
+    forCase: [
+      `Pour Hobbes, l'état de nature — sans autorité pour arbitrer les conflits — est une « guerre de tous contre tous » où la vie est, selon sa formule célèbre, « solitaire, pauvre, méchante, brutale et courte ».`,
+      `Chacun, cherchant à se protéger des autres qui pourraient chercher à lui nuire en premier, est poussé à la méfiance et à la violence préventive, même sans mauvaise intention initiale — un cercle vicieux structurel, pas seulement une question de mauvais caractère individuel.`,
+      `La solution, pour Hobbes, est un pouvoir fort et centralisé (le « Léviathan ») auquel chacun cède une part de sa liberté en échange de la sécurité et de la paix civile — sans ce pouvoir, le chaos reprend inévitablement le dessus.`,
+    ],
+    againstCase: [
+      `Rousseau conteste ce portrait sombre : selon lui, l'état de nature est plutôt pacifique — l'humain y est un « bon sauvage », guidé par la pitié naturelle envers ses semblables plus que par l'agressivité.`,
+      `Ce n'est pas la nature humaine qui produit la violence et l'inégalité, mais l'apparition de la propriété privée et de la vie en société, qui introduisent la comparaison, la compétition et la domination des uns sur les autres.`,
+      `Sa solution n'est donc pas un pouvoir fort imposé d'en haut, mais un contrat social où le peuple reste pleinement souverain à travers la « volonté générale » — l'autorité doit émaner du collectif, non s'imposer à lui pour le contenir.`,
+    ] },
+
+  { id:'duel3', icon:'📉', theme:'Histoire des idées', type:'duel',
+    topic:`Keynes contre Hayek : l'État doit-il intervenir dans l'économie ?`,
+    question:`En période de crise, l'État doit-il activement intervenir dans l'économie, ou la laisser s'auto-réguler ?`,
+    forLabel:'🔵 John Maynard Keynes', againstLabel:'🟣 Friedrich Hayek',
+    forCase: [
+      `Keynes soutient qu'en période de récession, les marchés ne s'auto-régulent pas assez vite : la demande peut rester durablement insuffisante, et le chômage s'installer, sans qu'aucun mécanisme naturel ne vienne rapidement corriger la situation.`,
+      `Dans ce cas, l'État a un rôle actif à jouer : augmenter ses propres dépenses (grands travaux, investissements publics) pour soutenir directement la demande et « amorcer la pompe » de l'activité économique, quitte à emprunter temporairement pour cela.`,
+      `Pour Keynes, attendre passivement que le marché « se corrige tout seul » peut coûter des années de chômage et de gâchis économique évitables par une action publique ciblée et temporaire.`,
+    ],
+    againstCase: [
+      `Hayek objecte qu'aucune autorité centrale, aussi bien informée soit-elle, ne peut disposer de toute l'information dispersée dans l'économie (les préférences, les besoins, les opportunités de millions d'acteurs) — ce qu'il appelle le « problème de la connaissance ».`,
+      `Les prix, sur un marché libre, transmettent naturellement cette information dispersée et coordonnent les décisions de chacun bien mieux qu'une planification centrale ne pourrait le faire — intervenir massivement fausse ces signaux.`,
+      `Une intervention étatique répétée, même bien intentionnée, tend à s'étendre et à se maintenir au-delà de la crise initiale, créant des dépendances et des distorsions économiques qui peuvent coûter plus cher à long terme que le mal qu'elle visait à corriger.`,
+    ] },
+
+  { id:'duel4', icon:'🚫', theme:'Histoire des idées', type:'duel',
+    topic:`Mill contre le paternalisme : la société peut-elle te protéger de toi-même ?`,
+    question:`A-t-on le droit de restreindre la liberté d'un individu pour son propre bien, même s'il ne nuit qu'à lui-même ?`,
+    forLabel:'🔵 John Stuart Mill', againstLabel:'🟣 Le paternalisme protecteur',
+    forCase: [
+      `Mill défend un principe simple et exigeant, le « principe de préjudice » (harm principle) : la seule raison légitime de restreindre la liberté d'un individu contre sa volonté est d'empêcher qu'il ne nuise à autrui.`,
+      `Si une personne ne prend un risque que pour elle-même — même un choix que la société juge imprudent — celle-ci n'a pas à la protéger d'elle-même : c'est sa vie, et l'erreur fait partie de la liberté réelle de la vivre comme on l'entend.`,
+      `Pour Mill, une société qui autorise trop largement à « protéger les gens contre eux-mêmes » ouvre la porte à un contrôle sans fin sur des choix de plus en plus personnels, au nom d'un bien-être défini par d'autres que soi.`,
+    ],
+    againstCase: [
+      `Le camp paternaliste répond que certaines décisions individuelles ont des conséquences si graves, si difficiles à anticiper rationnellement au moment du choix, ou si addictives une fois enclenchées, que l'individu n'est plus vraiment en position de choisir « librement ».`,
+      `Des produits ou comportements conçus pour exploiter des biais psychologiques bien connus (dépendances, jeux d'argent, désinformation) peuvent justifier une intervention protectrice, précisément parce que le choix apparent n'est pas aussi libre et informé qu'il en a l'air.`,
+      `Une société qui laisse ses membres se faire du tort gravement, sous prétexte de respecter à la lettre leur liberté formelle, peut aussi être accusée d'abandonner une responsabilité collective réelle envers ses membres les plus vulnérables à ces pièges.`,
+    ] },
 ];
 
 window.MAESTRIA_DEBATES = { DEBATES };

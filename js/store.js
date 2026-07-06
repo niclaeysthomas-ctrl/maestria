@@ -85,7 +85,8 @@
       earTraining:{ attempts:{} }, improJournal:[], notes:[], calendar:{ events:[] },
       exercises:{ stats:{}, dailyLog:[] }, calibration:{ attempts:[] }, mentalModels:{ journal:[] },
       biasJournal:[], victories:[], essays:[], steelmans:[],
-      speaking:{ log:[] }, applications:[], interviewLog:[], debateJournal:[] };
+      speaking:{ log:[] }, applications:[], interviewLog:[], debateJournal:[],
+      fallacyJournal:[], predictions:[] };
   }
 
   /* ---------- Persistance ---------- */
@@ -131,6 +132,8 @@
       if (!s.applications) s.applications = [];
       if (!s.interviewLog) s.interviewLog = [];
       if (!s.debateJournal) s.debateJournal = [];
+      if (!s.fallacyJournal) s.fallacyJournal = [];
+      if (!s.predictions) s.predictions = [];
       return s;
     } catch { return freshState(); }
   }
@@ -660,6 +663,40 @@
     return { xp, ...addXp('lettres', xp, 'debate') }; // save inclus
   }
 
+  /* ---------- Sophismes en action (reconnaissance, pas de gating) ---------- */
+  function fallacyDone(fallacyId) { return ((state.fallacyJournal || [])).some((e) => e.fallacyId === fallacyId); }
+  function fallacyEntriesFor(fallacyId) { return (state.fallacyJournal || []).filter((e) => e.fallacyId === fallacyId).slice().reverse(); }
+  function addFallacyEntry(fallacyId, example) {
+    state.fallacyJournal = state.fallacyJournal || [];
+    state.fallacyJournal.push({ date: Dates.today(), fallacyId, example });
+    const xp = Math.round(6 * H.streakMultiplier());
+    return { xp, ...addXp('lettres', xp, 'fallacy') }; // save inclus
+  }
+
+  /* ---------- Journal de prédictions (calibration appliquée à la vraie vie) ---------- */
+  function predictionsAll() { return (state.predictions || []).slice().reverse(); }
+  function addPrediction(event, confidence) {
+    state.predictions = state.predictions || [];
+    state.predictions.push({ id:'pred_'+Date.now()+'_'+Math.random().toString(36).slice(2,6), date: Dates.today(), event, confidence, resolved:false, outcome:null, resolvedDate:null });
+    save();
+  }
+  function resolvePrediction(id, outcome) {
+    const p = (state.predictions || []).find((x) => x.id === id);
+    if (p) { p.resolved = true; p.outcome = outcome; p.resolvedDate = Dates.today(); save(); }
+  }
+  function removePrediction(id) { state.predictions = (state.predictions || []).filter((p) => p.id !== id); save(); }
+  const PREDICTION_OUTCOME_SCORE = { oui:1, non:0, partiel:0.5 };
+  function predictionStats() {
+    const resolved = (state.predictions || []).filter((p) => p.resolved && p.outcome);
+    if (!resolved.length) return null;
+    const buckets = [25, 50, 75, 100].map((b) => {
+      const inBucket = resolved.filter((p) => p.confidence === b);
+      const avg = inBucket.length ? inBucket.reduce((s, p) => s + PREDICTION_OUTCOME_SCORE[p.outcome], 0) / inBucket.length : null;
+      return { confidence: b, count: inBucket.length, avgCorrectness: avg };
+    });
+    return { total: resolved.length, buckets, pending: (state.predictions || []).filter((p) => !p.resolved).length };
+  }
+
   window.Store = {
     get state() { return state; },
     Dates, H,
@@ -684,6 +721,8 @@
     applicationsAll, addApplication, updateApplicationStatus, removeApplication,
     recordInterviewAttempt, interviewLogAll, interviewStatsFor,
     debateDone, debateEntriesFor, addDebateEntry,
+    fallacyDone, fallacyEntriesFor, addFallacyEntry,
+    predictionsAll, addPrediction, resolvePrediction, removePrediction, predictionStats,
     exportJSON, importJSON,
     /* Profils */
     getProfiles, createProfile, deleteProfile, switchProfile,

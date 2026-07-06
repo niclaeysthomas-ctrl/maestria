@@ -11,6 +11,7 @@
   const { ESSAY_PROMPTS } = window.MAESTRIA_THINKING;
   const { INTERVIEW_QUESTIONS } = window.MAESTRIA_INTERVIEW;
   const { DEBATES } = window.MAESTRIA_DEBATES;
+  const { LOGICAL_FALLACIES } = window.MAESTRIA_FALLACIES;
   const S = window.Store;
   const { Dates, H } = S;
 
@@ -1070,7 +1071,52 @@
         <span class="cal-legend-item"><i style="background:#10b981"></i>Bien calibré : ${stats.wellCount}</span>
       </div>
       <h2 class="section">🕓 Récents</h2>
-      ${recentHTML}`;
+      ${recentHTML}
+      <button class="btn block" data-go="#/predictions">📡 Mes prédictions sur la vraie vie →</button>`;
+  }
+
+  /* ======================================================
+     JOURNAL DE PRÉDICTIONS (calibration appliquée au réel)
+     ====================================================== */
+  function viewPredictions() {
+    nav.hidden = false;
+    const stats = S.predictionStats();
+    const pending = S.predictionsAll().filter((p) => !p.resolved);
+    const resolved = S.predictionsAll().filter((p) => p.resolved);
+    const pendingHTML = pending.map((p) => `
+      <div class="card predict-row">
+        <div class="app-row-head"><b>${esc(p.event)}</b><button class="note-del" data-pred-del="${p.id}" aria-label="Supprimer">✕</button></div>
+        <span class="muted small">Confiance déclarée : ${p.confidence}% · ${esc(Dates.label(p.date))}</span>
+        <div class="row" style="margin-top:8px">
+          <button class="btn good" data-pred-resolve="${p.id}:oui">✅ Réalisé</button>
+          <button class="btn" data-pred-resolve="${p.id}:partiel">🤔 Partiel</button>
+          <button class="btn bad" data-pred-resolve="${p.id}:non">❌ Pas réalisé</button>
+        </div>
+      </div>`).join('');
+    const resolvedHTML = resolved.map((p) => {
+      const cls = p.outcome === 'oui' ? 'good' : (p.outcome === 'non' ? 'over' : 'under');
+      return `<div class="calib-row ${cls}"><span>${esc(p.event)}</span><span>confiance ${p.confidence}%</span><span>${p.outcome}</span></div>`;
+    }).join('');
+    const verdictHTML = stats ? `
+      <div class="card calib-scene">${calibrationBarsSVG(stats.buckets)}
+        <p class="muted small center">Même diagramme que la Calibration, appliqué à de vrais événements de ta vie.</p></div>` : '';
+    app.innerHTML = `
+      <header class="dhead"><button class="back" data-go="#/calibration">‹</button>
+        <div class="dhead-main"><span class="dicon big">📡</span>
+          <div><h1>Mes prédictions</h1><span class="muted small">${stats ? stats.total + ' résolue(s)' : 'Prédis, puis vérifie'}</span></div></div></header>
+      <div class="card">Avant un examen, un entretien, un match : prédis le résultat et ta confiance. Reviens ensuite vérifier. C'est la Calibration, appliquée à ta vraie vie — pas qu'à des exercices.</div>
+      <form id="prediction-form" class="stack">
+        <input type="text" name="event" placeholder="Ce que tu prédis (ex : j'aurai plus de 14 à l'examen de compta)">
+        <p class="muted small">Ta confiance :</p>
+        <div class="row confidence-row">
+          ${[25,50,75,100].map((c) => `<button type="button" class="btn" data-pred-confidence="${c}">${c} %</button>`).join('')}
+        </div>
+        <input type="hidden" name="confidence" id="prediction-confidence">
+        <button class="btn primary block" type="submit" id="prediction-submit" disabled>Enregistrer ma prédiction</button>
+      </form>
+      ${verdictHTML}
+      ${pending.length ? `<h2 class="section">⏳ En attente</h2>${pendingHTML}` : ''}
+      ${resolved.length ? `<h2 class="section">🕓 Résolues</h2>${resolvedHTML}` : ''}`;
   }
 
   /* ======================================================
@@ -1201,7 +1247,8 @@
       <button class="card cta" data-go="#/thinking/essay">✍️ Essai hebdomadaire ${done ? '<span class="badge">✓ fait cette semaine</span>' : ''} →</button>
       <button class="card cta" data-go="#/thinking/steelman">⚔️ Steel-man — défends l'avis adverse →</button>
       <button class="card cta" data-go="#/thinking/coherence">🧭 Vérifier ma cohérence →</button>
-      <button class="card cta" data-go="#/thinking/debates">⚖️ Grands débats — les deux camps →</button>`;
+      <button class="card cta" data-go="#/thinking/debates">⚖️ Grands débats — les deux camps →</button>
+      <button class="card cta" data-go="#/thinking/fallacies">🧩 Sophismes en action →</button>`;
   }
 
   function viewEssay() {
@@ -1288,26 +1335,33 @@
   /* ======================================================
      GRANDS DÉBATS (dossiers à deux voix, aucun parti pris)
      ====================================================== */
+  function debateRowHTML(d) {
+    const done = S.debateDone(d.id);
+    return `<button class="fiche-row" data-go="#/thinking/debates/${d.id}">
+      <span class="fr-ic">${d.icon}</span>
+      <div class="cm-main"><b>${esc(d.topic)}</b><span class="muted small">${esc(d.theme)}${done ? ' · ✓ synthèse écrite' : ''}</span></div></button>`;
+  }
+
   function viewDebates() {
     nav.hidden = false;
-    const itemsHTML = DEBATES.map((d) => {
-      const done = S.debateDone(d.id);
-      return `<button class="fiche-row" data-go="#/thinking/debates/${d.id}">
-        <span class="fr-ic">${d.icon}</span>
-        <div class="cm-main"><b>${esc(d.topic)}</b><span class="muted small">${esc(d.theme)}${done ? ' · ✓ synthèse écrite' : ''}</span></div></button>`;
-    }).join('');
+    const debates = DEBATES.filter((d) => d.type !== 'duel'), duels = DEBATES.filter((d) => d.type === 'duel');
     app.innerHTML = `
       <header class="dhead"><button class="back" data-go="#/thinking">‹</button>
         <div class="dhead-main"><span class="dicon big">⚖️</span>
           <div><h1>Grands débats</h1><span class="muted small">Le meilleur camp POUR, le meilleur camp CONTRE</span></div></div></header>
       <div class="card">Sur chaque sujet : l'argumentaire le plus solide de chaque côté, appuyé sur de vrais courants de recherche. Aucun des deux n'est présenté comme « la bonne réponse » — à toi de juger, et de construire ta propre position.</div>
-      ${itemsHTML}`;
+      <h2 class="section">🗳️ Controverses actuelles</h2>
+      ${debates.map(debateRowHTML).join('')}
+      ${duels.length ? `<h2 class="section">🏛️ Duels de penseurs</h2>${duels.map(debateRowHTML).join('')}` : ''}`;
   }
 
   function viewDebate(id) {
     nav.hidden = false;
     const d = DEBATES.find((x) => x.id === id);
     if (!d) { app.innerHTML = `<div class="card empty">Débat introuvable.</div>`; return; }
+    const isDuel = d.type === 'duel';
+    const forLabel = d.forLabel || '✅ Le cas POUR', againstLabel = d.againstLabel || '❌ Le cas CONTRE';
+    const forCls = isDuel ? 'duel-a' : 'debate-for', againstCls = isDuel ? 'duel-b' : 'debate-against';
     const forHTML = d.forCase.map((p) => `<p class="lesson-theory">${esc(p)}</p>`).join('');
     const againstHTML = d.againstCase.map((p) => `<p class="lesson-theory">${esc(p)}</p>`).join('');
     const entriesHTML = S.debateEntriesFor(id).map((e) => `<div class="card diary-entry"><div class="muted small">${esc(Dates.label(e.date))}</div><p>${esc(e.reasoning)}</p></div>`).join('');
@@ -1315,13 +1369,52 @@
       <header class="dhead"><button class="back" data-go="#/thinking/debates">‹</button>
         <div class="dhead-main"><span class="dicon big">${d.icon}</span>
           <div><h1>${esc(d.topic)}</h1><span class="muted small">${esc(d.question)}</span></div></div></header>
-      <div class="card debate-case debate-for"><h3 class="lb">✅ Le cas POUR</h3>${forHTML}</div>
-      <div class="card debate-case debate-against"><h3 class="lb">❌ Le cas CONTRE</h3>${againstHTML}</div>
+      <div class="card debate-case ${forCls}"><h3 class="lb">${esc(forLabel)}</h3>${forHTML}</div>
+      <div class="card debate-case ${againstCls}"><h3 class="lb">${esc(againstLabel)}</h3>${againstHTML}</div>
       <form id="debate-form" class="stack">
         <h2 class="section">✍️ Ta synthèse</h2>
-        <p class="muted small">Quel argument t'a le plus convaincu, et pourquoi ? Où est le point faible de chaque côté ? Quelle est ta position, et sur quoi repose-t-elle vraiment ?</p>
+        <p class="muted small">${isDuel ? 'Quelle position te semble la plus solide, et pourquoi ? Où est le point faible de chacune ? Quelle est ta propre position, et sur quoi repose-t-elle ?' : 'Quel argument t\'a le plus convaincu, et pourquoi ? Où est le point faible de chaque côté ? Quelle est ta position, et sur quoi repose-t-elle vraiment ?'}</p>
         <textarea name="reasoning" rows="6" placeholder="Ta synthèse…"></textarea>
         <button class="btn primary block" type="submit">Enregistrer ma synthèse</button>
+      </form>
+      ${entriesHTML}`;
+  }
+
+  /* ======================================================
+     SOPHISMES EN ACTION (reconnaissance dans de vrais arguments)
+     ====================================================== */
+  function viewFallacies() {
+    nav.hidden = false;
+    const itemsHTML = LOGICAL_FALLACIES.map((f) => {
+      const done = S.fallacyDone(f.id);
+      return `<button class="fiche-row" data-go="#/thinking/fallacies/${f.id}">
+        <span class="fr-ic">${f.icon}</span>
+        <div class="cm-main"><b>${esc(f.name)}</b><span class="muted small">${done ? '✓ un exemple noté' : 'à découvrir'}</span></div></button>`;
+    }).join('');
+    app.innerHTML = `
+      <header class="dhead"><button class="back" data-go="#/thinking">‹</button>
+        <div class="dhead-main"><span class="dicon big">🧩</span>
+          <div><h1>Sophismes en action</h1><span class="muted small">Repère la faille dans de vrais arguments</span></div></div></header>
+      <div class="card">Ces exemples sont volontairement équilibrés : la leçon porte sur la structure logique de l'argument, jamais sur le camp politique qui le tient. Une conclusion peut être vraie même si l'argument avancé pour elle est fallacieux — c'est le raisonnement qu'on juge, pas la conclusion.</div>
+      ${itemsHTML}`;
+  }
+
+  function viewFallacy(id) {
+    nav.hidden = false;
+    const f = LOGICAL_FALLACIES.find((x) => x.id === id);
+    if (!f) { app.innerHTML = `<div class="card empty">Sophisme introuvable.</div>`; return; }
+    const entriesHTML = S.fallacyEntriesFor(id).map((e) => `<div class="card diary-entry"><div class="muted small">${esc(Dates.label(e.date))}</div><p>${esc(e.example)}</p></div>`).join('');
+    app.innerHTML = `
+      <header class="dhead"><button class="back" data-go="#/thinking/fallacies">‹</button>
+        <div class="dhead-main"><span class="dicon big">${f.icon}</span>
+          <div><h1>${esc(f.name)}</h1></div></div></header>
+      <div class="card debate-case debate-against"><h3 class="lb">🗣️ L'argument</h3><p class="lesson-theory">${esc(f.argument)}</p></div>
+      <div class="card"><h3 class="lb">🔍 Pourquoi ça ne tient pas</h3><p class="lesson-theory">${esc(f.explanation)}</p></div>
+      <form id="fallacy-form" class="stack">
+        <h2 class="section">✍️ À ton tour</h2>
+        <p class="muted small">Tu as déjà entendu ce sophisme quelque part (débat, pub, conversation) ? Note l'exemple.</p>
+        <textarea name="example" rows="3" placeholder="Un exemple que tu as repéré…"></textarea>
+        <button class="btn primary block" type="submit">Enregistrer</button>
       </form>
       ${entriesHTML}`;
   }
@@ -1956,6 +2049,7 @@
     else if (root==='d')    viewDiscipline(parts[1]);
     else if (root==='review') { if (parts[1]==='exercises') viewExercises(parts[2]); else viewReview(parts[1]); }
     else if (root==='calibration') viewCalibration();
+    else if (root==='predictions') viewPredictions();
     else if (root==='models') { if (parts[1]) viewMentalModel(parts[1]); else viewMentalModels(); }
     else if (root==='biases') { if (parts[1]) viewBias(parts[1]); else viewBiases(); }
     else if (root==='victories') viewVictories();
@@ -1964,6 +2058,7 @@
       else if (parts[1]==='steelman') { if (parts[2]) viewSteelman(parts[2]); else viewSteelmanHub(); }
       else if (parts[1]==='coherence') viewCoherence();
       else if (parts[1]==='debates') { if (parts[2]) viewDebate(parts[2]); else viewDebates(); }
+      else if (parts[1]==='fallacies') { if (parts[2]) viewFallacy(parts[2]); else viewFallacies(); }
       else viewThinking();
     }
     else if (root==='weekly') viewWeekly();
@@ -2061,6 +2156,23 @@
     }
     if (e.target.closest('[data-ear-next]')) { earExercise=null; render(); return; }
     if (e.target.closest('[data-ear-switch]')) { earMode=null; earExercise=null; render(); return; }
+
+    /* Prédictions : choisir la confiance (DOM direct, pas de re-render pour garder le champ "event" saisi) */
+    const predConfidence=e.target.closest('[data-pred-confidence]');
+    if (predConfidence) {
+      const v=predConfidence.dataset.predConfidence;
+      const input=document.getElementById('prediction-confidence'); if (input) input.value=v;
+      document.querySelectorAll('[data-pred-confidence]').forEach((b)=>b.classList.toggle('primary', b.dataset.predConfidence===v));
+      const submitBtn=document.getElementById('prediction-submit'); if (submitBtn) submitBtn.disabled=false;
+      return;
+    }
+    const predResolve=e.target.closest('[data-pred-resolve]');
+    if (predResolve) {
+      const [id, outcome]=predResolve.dataset.predResolve.split(':');
+      S.resolvePrediction(id, outcome); toast('Prédiction résolue.'); render(); return;
+    }
+    const predDel=e.target.closest('[data-pred-del]');
+    if (predDel) { S.removePrediction(predDel.dataset.predDel); render(); return; }
 
     /* Exercices : confiance déclarée, révéler la correction, noter (4 paliers), enchaîner */
     const exConfidence=e.target.closest('[data-ex-confidence]');
@@ -2370,6 +2482,21 @@
       if (!reasoning) { render(); return; }
       const r=S.addDebateEntry(debateId, reasoning);
       afterMutation(r); toast(`Synthèse enregistrée · +${r.xp} XP`); e.target.reset(); render(); return;
+    }
+    if (e.target.id==='fallacy-form') {
+      const fallacyId=location.hash.split('/')[3];
+      const fd=new FormData(e.target);
+      const example=(fd.get('example')||'').trim();
+      if (!example) { render(); return; }
+      const r=S.addFallacyEntry(fallacyId, example);
+      afterMutation(r); toast(`Enregistré · +${r.xp} XP`); e.target.reset(); render(); return;
+    }
+    if (e.target.id==='prediction-form') {
+      const fd=new FormData(e.target);
+      const event=(fd.get('event')||'').trim(), confidence=Number(fd.get('confidence'));
+      if (!event||!confidence) { render(); return; }
+      S.addPrediction(event, confidence);
+      toast('Prédiction enregistrée.'); e.target.reset(); render(); return;
     }
     if (e.target.id==='speaking-form') {
       const topicInput=document.getElementById('speaking-topic');
