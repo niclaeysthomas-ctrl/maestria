@@ -10,6 +10,7 @@
   const { COGNITIVE_BIASES } = window.MAESTRIA_BIASES;
   const { ESSAY_PROMPTS } = window.MAESTRIA_THINKING;
   const { INTERVIEW_QUESTIONS } = window.MAESTRIA_INTERVIEW;
+  const { DEBATES } = window.MAESTRIA_DEBATES;
   const S = window.Store;
   const { Dates, H } = S;
 
@@ -1199,7 +1200,8 @@
           <div><h1>Atelier de pensée</h1><span class="muted small">Construis des positions solides, pas juste des opinions</span></div></div></header>
       <button class="card cta" data-go="#/thinking/essay">✍️ Essai hebdomadaire ${done ? '<span class="badge">✓ fait cette semaine</span>' : ''} →</button>
       <button class="card cta" data-go="#/thinking/steelman">⚔️ Steel-man — défends l'avis adverse →</button>
-      <button class="card cta" data-go="#/thinking/coherence">🧭 Vérifier ma cohérence →</button>`;
+      <button class="card cta" data-go="#/thinking/coherence">🧭 Vérifier ma cohérence →</button>
+      <button class="card cta" data-go="#/thinking/debates">⚖️ Grands débats — les deux camps →</button>`;
   }
 
   function viewEssay() {
@@ -1281,6 +1283,47 @@
           <div><h1>Ma cohérence</h1><span class="muted small">Tes opinions, groupées par thème</span></div></div></header>
       <div class="card">Relis tes positions sur un même thème d'un bloc. Se contredisent-elles, ou se sont-elles affinées ? L'app ne détecte rien automatiquement — c'est à toi de juger, en toute honnêteté.</div>
       ${themesHTML}`;
+  }
+
+  /* ======================================================
+     GRANDS DÉBATS (dossiers à deux voix, aucun parti pris)
+     ====================================================== */
+  function viewDebates() {
+    nav.hidden = false;
+    const itemsHTML = DEBATES.map((d) => {
+      const done = S.debateDone(d.id);
+      return `<button class="fiche-row" data-go="#/thinking/debates/${d.id}">
+        <span class="fr-ic">${d.icon}</span>
+        <div class="cm-main"><b>${esc(d.topic)}</b><span class="muted small">${esc(d.theme)}${done ? ' · ✓ synthèse écrite' : ''}</span></div></button>`;
+    }).join('');
+    app.innerHTML = `
+      <header class="dhead"><button class="back" data-go="#/thinking">‹</button>
+        <div class="dhead-main"><span class="dicon big">⚖️</span>
+          <div><h1>Grands débats</h1><span class="muted small">Le meilleur camp POUR, le meilleur camp CONTRE</span></div></div></header>
+      <div class="card">Sur chaque sujet : l'argumentaire le plus solide de chaque côté, appuyé sur de vrais courants de recherche. Aucun des deux n'est présenté comme « la bonne réponse » — à toi de juger, et de construire ta propre position.</div>
+      ${itemsHTML}`;
+  }
+
+  function viewDebate(id) {
+    nav.hidden = false;
+    const d = DEBATES.find((x) => x.id === id);
+    if (!d) { app.innerHTML = `<div class="card empty">Débat introuvable.</div>`; return; }
+    const forHTML = d.forCase.map((p) => `<p class="lesson-theory">${esc(p)}</p>`).join('');
+    const againstHTML = d.againstCase.map((p) => `<p class="lesson-theory">${esc(p)}</p>`).join('');
+    const entriesHTML = S.debateEntriesFor(id).map((e) => `<div class="card diary-entry"><div class="muted small">${esc(Dates.label(e.date))}</div><p>${esc(e.reasoning)}</p></div>`).join('');
+    app.innerHTML = `
+      <header class="dhead"><button class="back" data-go="#/thinking/debates">‹</button>
+        <div class="dhead-main"><span class="dicon big">${d.icon}</span>
+          <div><h1>${esc(d.topic)}</h1><span class="muted small">${esc(d.question)}</span></div></div></header>
+      <div class="card debate-case debate-for"><h3 class="lb">✅ Le cas POUR</h3>${forHTML}</div>
+      <div class="card debate-case debate-against"><h3 class="lb">❌ Le cas CONTRE</h3>${againstHTML}</div>
+      <form id="debate-form" class="stack">
+        <h2 class="section">✍️ Ta synthèse</h2>
+        <p class="muted small">Quel argument t'a le plus convaincu, et pourquoi ? Où est le point faible de chaque côté ? Quelle est ta position, et sur quoi repose-t-elle vraiment ?</p>
+        <textarea name="reasoning" rows="6" placeholder="Ta synthèse…"></textarea>
+        <button class="btn primary block" type="submit">Enregistrer ma synthèse</button>
+      </form>
+      ${entriesHTML}`;
   }
 
   /* ======================================================
@@ -1920,6 +1963,7 @@
       if (parts[1]==='essay') viewEssay();
       else if (parts[1]==='steelman') { if (parts[2]) viewSteelman(parts[2]); else viewSteelmanHub(); }
       else if (parts[1]==='coherence') viewCoherence();
+      else if (parts[1]==='debates') { if (parts[2]) viewDebate(parts[2]); else viewDebates(); }
       else viewThinking();
     }
     else if (root==='weekly') viewWeekly();
@@ -2318,6 +2362,14 @@
       if (!text||!o) { render(); return; }
       const r=S.addSteelman(o, text);
       afterMutation(r); toast(`Enregistré · +${r.xp} XP`); e.target.reset(); render(); return;
+    }
+    if (e.target.id==='debate-form') {
+      const debateId=location.hash.split('/')[3];
+      const fd=new FormData(e.target);
+      const reasoning=(fd.get('reasoning')||'').trim();
+      if (!reasoning) { render(); return; }
+      const r=S.addDebateEntry(debateId, reasoning);
+      afterMutation(r); toast(`Synthèse enregistrée · +${r.xp} XP`); e.target.reset(); render(); return;
     }
     if (e.target.id==='speaking-form') {
       const topicInput=document.getElementById('speaking-topic');

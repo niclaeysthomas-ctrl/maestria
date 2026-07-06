@@ -85,7 +85,7 @@
       earTraining:{ attempts:{} }, improJournal:[], notes:[], calendar:{ events:[] },
       exercises:{ stats:{}, dailyLog:[] }, calibration:{ attempts:[] }, mentalModels:{ journal:[] },
       biasJournal:[], victories:[], essays:[], steelmans:[],
-      speaking:{ log:[] }, applications:[], interviewLog:[] };
+      speaking:{ log:[] }, applications:[], interviewLog:[], debateJournal:[] };
   }
 
   /* ---------- Persistance ---------- */
@@ -130,6 +130,7 @@
       if (!s.speaking.log) s.speaking.log = [];
       if (!s.applications) s.applications = [];
       if (!s.interviewLog) s.interviewLog = [];
+      if (!s.debateJournal) s.debateJournal = [];
       return s;
     } catch { return freshState(); }
   }
@@ -649,6 +650,16 @@
     return { count: entries.length, sumQuality: entries.reduce((a, l) => a + l.quality, 0) };
   }
 
+  /* ---------- Grands Débats (dossiers à deux voix + journal de synthèse) ---------- */
+  function debateDone(debateId) { return ((state.debateJournal || [])).some((e) => e.debateId === debateId); }
+  function debateEntriesFor(debateId) { return (state.debateJournal || []).filter((e) => e.debateId === debateId).slice().reverse(); }
+  function addDebateEntry(debateId, reasoning) {
+    state.debateJournal = state.debateJournal || [];
+    state.debateJournal.push({ date: Dates.today(), debateId, reasoning });
+    const xp = Math.round(8 * H.streakMultiplier());
+    return { xp, ...addXp('lettres', xp, 'debate') }; // save inclus
+  }
+
   window.Store = {
     get state() { return state; },
     Dates, H,
@@ -672,6 +683,7 @@
     addSpeakingEntry, speakingLogAll,
     applicationsAll, addApplication, updateApplicationStatus, removeApplication,
     recordInterviewAttempt, interviewLogAll, interviewStatsFor,
+    debateDone, debateEntriesFor, addDebateEntry,
     exportJSON, importJSON,
     /* Profils */
     getProfiles, createProfile, deleteProfile, switchProfile,

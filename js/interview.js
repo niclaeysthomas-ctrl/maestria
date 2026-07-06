@@ -18,6 +18,8 @@ const INTERVIEW_QUESTIONS = {
       tip:`Dette : pas de dilution, mais remboursement obligatoire + intérêts + risque financier accru. Equity : dilue les actionnaires existants, mais pas d'obligation de remboursement fixe. L'arbitrage central : risque vs dilution.` },
     { id:'iq6', q:`Comment expliquerais-tu un ratio dette nette/EBITDA élevé à un client inquiet ?`,
       tip:`Contextualise : le seuil de vigilance classique est ~3-4×. Au-delà, regarde la capacité de génération de cash et l'échéancier de la dette, pas juste le ratio brut — un ratio élevé n'est pas automatiquement dangereux si les flux sont stables et prévisibles.` },
+    { id:'iq7b', q:`Quelle est la différence entre un multiple EV/EBITDA et un P/E (price-to-earnings) ?`,
+      tip:`EV/EBITDA rapporte la valeur d'entreprise (dette incluse) à la performance opérationnelle — indépendant de la structure de capital. Le P/E rapporte le cours de bourse au bénéfice net PAR ACTION — donc sensible à l'endettement et à la fiscalité. EV/EBITDA permet de comparer des entreprises à endettement différent, le P/E non.` },
   ],
   comportement: [
     { id:'iq7', q:`Parle-moi de toi.`,
@@ -30,6 +32,8 @@ const INTERVIEW_QUESTIONS = {
       tip:`Reste crédible et cohérent avec le poste — ni trop vague ("je ne sais pas"), ni trop précis et déconnecté (un poste que ce stage ne prépare pas du tout).` },
     { id:'iq11', q:`Décris une situation où tu as dû convaincre quelqu'un.`,
       tip:`Structure STAR : Situation, Tâche, Action (ce que TOI as fait précisément), Résultat (concret, si possible chiffré).` },
+    { id:'iq12', q:`As-tu des questions pour nous ?`,
+      tip:`Ne dis jamais « non ». Prépare 2-3 questions précises et non-génériques (sur l'équipe, un projet récent, ce qui fait réussir quelqu'un dans ce poste) — ça montre un vrai intérêt, pas une question de forme.` },
   ],
 };
 

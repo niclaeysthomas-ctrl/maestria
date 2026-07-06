@@ -37,6 +37,12 @@ const EXERCISES = {
     { id:'fi_ex10', calc:false,
       prompt:`Une startup hésite entre lever des fonds en dette ou en capital (equity). Quel est l'arbitrage principal ?`,
       solution:`La dette ne dilue pas les fondateurs mais doit être remboursée avec intérêts (risque financier accru). L'equity dilue le capital mais n'impose pas de remboursement fixe. L'arbitrage central est risque vs dilution.` },
+    { id:'fi_ex11', calc:true,
+      prompt:`Une entreprise vaut 50 M€ en valeur d'entreprise (EV) et génère un EBITDA de 10 M€. Calcule le multiple EV/EBITDA et dis si c'est cher ou bon marché pour un secteur qui se négocie habituellement à 6-8×.`,
+      solution:`EV/EBITDA = 50 / 10 = 5×. C'est en dessous de la fourchette sectorielle (6-8×) : soit une bonne affaire, soit le marché anticipe une croissance ou une qualité inférieure — à creuser avant de conclure.` },
+    { id:'fi_ex12', calc:false,
+      prompt:`Une entreprise annonce un rachat d'actions (buyback) plutôt qu'un dividende. Quel est l'effet principal pour ses actionnaires restants ?`,
+      solution:`Le rachat réduit le nombre d'actions en circulation : mécaniquement, le bénéfice par action (BPA) et la part de propriété de chaque actionnaire restant augmentent, sans distribution de cash immédiatement imposable comme un dividende.` },
   ],
   espagnol: [
     { id:'es_ex1', calc:false,
@@ -54,6 +60,9 @@ const EXERCISES = {
     { id:'es_ex5', calc:false,
       prompt:`Conjugue « vivir » (vivre) à la 1ère personne du singulier, puis à « nosotros », au présent.`,
       solution:`Vivo (yo) / Vivimos (nosotros).` },
+    { id:'es_ex6', calc:false,
+      prompt:`Traduis : « Bien qu'il pleuve peut-être demain, je sortirai. » (le fait est incertain — utilise le subjonctif)`,
+      solution:`Aunque llueva mañana, saldré. — « Aunque » + subjonctif (llueva) car le fait est présenté comme incertain/hypothétique, pas encore avéré.` },
   ],
 };
 

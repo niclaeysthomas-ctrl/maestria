@@ -21,6 +21,10 @@ const ESSAY_PROMPTS = [
     prompt:`Que doit-on prioritairement à sa famille, à sa nation, à l'humanité ? Dans cet ordre, ou un autre ? Justifie ta hiérarchie.` },
   { id:'e8', title:`Capitalisme et justice sociale`,
     prompt:`Le capitalisme est-il compatible avec une réelle justice sociale, ou les deux s'opposent-ils structurellement ? Prends position.` },
+  { id:'e9', title:`Le rôle de l'école`,
+    prompt:`L'école doit-elle avant tout transmettre un socle de connaissances communes, ou développer l'esprit critique et l'autonomie de chacun ? Peut-elle vraiment faire les deux ?` },
+  { id:'e10', title:`Vie privée contre sécurité collective`,
+    prompt:`Jusqu'où peut-on sacrifier la vie privée (surveillance, données) au nom de la sécurité collective ? Où placerais-tu la limite, et pourquoi précisément là ?` },
 ];
 
 window.MAESTRIA_THINKING = { ESSAY_PROMPTS };

@@ -350,6 +350,12 @@ ul { list-style: none; padding: 0; margin: 0; }
 .app-row { padding: 12px 14px; }
 .app-row-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
 .app-row select { margin-bottom: 6px; }
+.debate-case { border-left: 4px solid var(--line); }
+.debate-case.debate-for { border-left-color: #10b981; }
+.debate-case.debate-against { border-left-color: #ef4444; }
+.debate-case .lb { margin-bottom: 10px; }
+.debate-case .lesson-theory { margin-bottom: 12px; }
+.debate-case .lesson-theory:last-child { margin-bottom: 0; }
 
 /* ---------- Calendrier ---------- */
 .cal-yearnav { align-items: center; margin-bottom: 4px; }
