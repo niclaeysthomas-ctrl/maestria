@@ -768,6 +768,292 @@ const COURSES = {
         },
       },
 
+      /* ---------------- MODULE 3 — LES MODES AU PIANO ---------------- */
+      {
+        id: 'pi_m3', icon: '🎨', title: 'Les modes au piano',
+        goal: `Les mêmes touches blanches, 7 couleurs différentes selon la tonique.`,
+        lessons: [
+          {
+            id: 'pi_m3l1', title: 'Le principe des modes au piano',
+            goal: `Comprendre que les 7 touches blanches donnent 7 modes différents selon la tonique.`,
+            theory: `Un mode, ce sont les mêmes 7 notes qu'une gamme majeure, mais avec une tonique différente. Au piano, ce principe est particulièrement visible : les 7 touches blanches de Do majeur donnent 7 modes différents selon la touche sur laquelle tu commences et résous — Do (Ionien, la référence), Ré (Dorien), Mi (Phrygien), Fa (Lydien), Sol (Mixolydien), La (Éolien, le mineur naturel), Si (Locrien). Aucune touche noire n'entre en jeu : seule ta tonique change.`,
+            diagram: null, tab: null, bpm: null,
+            success: `Récite les 7 modes dans l'ordre des touches blanches (Do→Si) avec leur nom.`,
+            cards: [
+              { front:`Les 7 modes de Do majeur, dans l'ordre des touches blanches`, back:`Do=Ionien, Ré=Dorien, Mi=Phrygien, Fa=Lydien, Sol=Mixolydien, La=Éolien, Si=Locrien` },
+              { front:`Qu'est-ce qui change d'un mode à l'autre, au piano ?`, back:`Uniquement la touche de résolution (tonique) — aucune touche noire ajoutée ou retirée` },
+            ],
+            pitfall: `Chercher une nouvelle position de doigts pour chaque mode : ce sont les mêmes touches blanches, seul le point de départ/résolution change.`,
+          },
+          {
+            id: 'pi_m3l2', title: 'Dorien & Mixolydien (les 2 utilitaires)',
+            goal: `Les 2 modes les plus employés, joués sur les touches blanches.`,
+            theory: `Ré Dorien = les touches blanches de Ré à Ré (Ré Mi Fa Sol La Si Do). Comparé au Ré mineur naturel (qui aurait un Sib), le Si reste NATUREL — cette 6te majeure lui donne une couleur « jazzy », moins triste. Sol Mixolydien = les touches blanches de Sol à Sol (Sol La Si Do Ré Mi Fa) — comparé au Sol majeur (qui aurait un Fa#), le Fa reste NATUREL — cette 7e mineure est la gamme de l'accord de dominante, le son du blues et du funk.`,
+            diagram: { type:'keyboard', dots: [
+              { note:0, label:'7' }, { note:2, root:true, label:'1' }, { note:4, label:'2' }, { note:5, label:'♭3' },
+              { note:7, label:'4' }, { note:9, label:'5' }, { note:11, label:'6' }, { note:12, label:'7' },
+            ] },
+            tab: null, bpm: null,
+            success: `Joue Ré Dorien (Ré à Ré, touches blanches) en insistant sur le Si — LA note qui le distingue du Ré mineur naturel.`,
+            cards: [
+              { front:`Ré Dorien = quelles touches ?`, back:`Les touches blanches de Ré à Ré (Ré Mi Fa Sol La Si Do)` },
+              { front:`Ce qui distingue Ré Dorien de Ré mineur naturel`, back:`Le Si reste NATUREL (6te majeure) au lieu de Sib` },
+              { front:`Sol Mixolydien = quelles touches ?`, back:`Les touches blanches de Sol à Sol (le Fa reste naturel, pas Fa#)` },
+            ],
+            pitfall: `Vouloir ajouter une touche noire « pour faire plus jazzy » : ces deux modes utilitaires n'en ont besoin d'aucune, tout est déjà dans les touches blanches.`,
+          },
+          {
+            id: 'pi_m3l3', title: 'Phrygien, Lydien & Locrien',
+            goal: `Les couleurs plus rares, toujours sur les touches blanches.`,
+            theory: `Mi Phrygien = touches blanches de Mi à Mi — son espagnol/oriental, le Fa juste au-dessus du Mi crée ce demi-ton caractéristique dès le 2e degré. Fa Lydien = touches blanches de Fa à Fa — son flottant et rêveur, le Si juste au-dessus du Fa crée une quarte augmentée. Si Locrien = touches blanches de Si à Si, le mode le plus instable de tous (2nde ET quinte diminuées dès le départ) — sert surtout de passage, jamais de résolution stable.`,
+            diagram: { type:'keyboard', dots: [
+              { note:0, label:'6' }, { note:2, label:'7' }, { note:4, root:true, label:'1' }, { note:5, label:'2' },
+              { note:7, label:'3' }, { note:9, label:'4' }, { note:11, label:'5' }, { note:12, label:'6' },
+            ] },
+            tab: null, bpm: null,
+            success: `Joue les 3 modes (Mi à Mi, Fa à Fa, Si à Si) et identifie à l'oreille lequel sonne « instable » (Si Locrien).`,
+            cards: [
+              { front:`Mi Phrygien`, back:`Touches blanches de Mi à Mi — son espagnol/oriental` },
+              { front:`Fa Lydien`, back:`Touches blanches de Fa à Fa — son flottant/rêveur` },
+              { front:`Si Locrien`, back:`Le plus instable de tous les modes — sert de passage, jamais de résolution` },
+            ],
+            pitfall: `Vouloir résoudre une impro sur Si Locrien comme une tonique stable : ce mode ne « se pose » jamais vraiment, contrairement aux 6 autres.`,
+          },
+        ],
+        fiche: {
+          title: 'Les modes au piano — l\'essentiel',
+          intro: `Les mêmes touches blanches, 7 couleurs différentes selon la tonique.`,
+          sections: [
+            { h:`Le principe`, body:`Les 7 touches blanches de Do majeur donnent 7 modes selon la tonique — aucune touche noire n'entre en jeu.` },
+            { h:`Dorien & Mixolydien`, body:`Ré à Ré (6te majeure) et Sol à Sol (7e mineure) — les 2 modes utilitaires, tout en touches blanches.` },
+            { h:`Phrygien, Lydien, Locrien`, body:`Mi à Mi (espagnol), Fa à Fa (flottant), Si à Si (le plus instable, jamais de résolution).` },
+          ],
+          diagram: { type:'keyboard', dots: [
+            { note:0, label:'7' }, { note:2, root:true, label:'1' }, { note:4, label:'2' }, { note:5, label:'♭3' },
+            { note:7, label:'4' }, { note:9, label:'5' }, { note:11, label:'6' }, { note:12, label:'7' },
+          ] },
+        },
+      },
+
+      /* ---------------- MODULE 4 — TRIADES ET RENVERSEMENTS ---------------- */
+      {
+        id: 'pi_m4', icon: '🔺', title: 'Triades et renversements',
+        goal: `Le plus petit accord possible, et l'art de le réorganiser sans le changer.`,
+        lessons: [
+          {
+            id: 'pi_m4l1', title: 'Construction des triades',
+            goal: `Jouer les 4 qualités de triades ensemble, à 3 doigts.`,
+            theory: `Une triade empile 3 notes par tierces à partir de la fondamentale : degrés 1, 3, 5. Quatre qualités : majeur (1 3 5), mineur (1 ♭3 5), diminué (1 ♭3 ♭5 — instable), augmenté (1 3 #5 — flottant, rare). Au piano, une triade se joue avec 3 doigts non-adjacents de la même main (souvent 1‑3‑5), toutes les notes frappées EXACTEMENT ensemble — c'est un seul son, pas trois notes successives.`,
+            diagram: { type:'keyboard', dots: [ { note:0, root:true, label:'1' }, { note:4, label:'3' }, { note:7, label:'5' } ] },
+            tab: null, bpm: null,
+            success: `Joue Do‑Mi‑Sol (doigts 1‑3‑5) puis Do‑Mib‑Sol (mineur) parfaitement ensemble, et écoute la différence de couleur.`,
+            cards: [
+              { front:`Triade majeure`, back:`1 3 5` },
+              { front:`Triade mineure`, back:`1 ♭3 5` },
+              { front:`Triade diminuée`, back:`1 ♭3 ♭5 (instable, tendu)` },
+              { front:`Triade augmentée`, back:`1 3 #5 (flottant, rare)` },
+            ],
+            pitfall: `Jouer les 3 notes l'une après l'autre au lieu de vraiment ensemble : une triade se juge à l'oreille comme un seul son.`,
+          },
+          {
+            id: 'pi_m4l2', title: 'Les renversements',
+            goal: `Réorganiser les 3 mêmes notes pour enchaîner les accords sans sauter.`,
+            theory: `Une triade a 3 renversements selon la note la plus grave : état fondamental (Do‑Mi‑Sol, fondamentale en bas), 1er renversement (Mi‑Sol‑Do, tierce en bas), 2e renversement (Sol‑Do‑Mi, quinte en bas). Les 3 renversements contiennent EXACTEMENT les mêmes notes — seule la plus grave change. Au piano, les renversements permettent d'enchaîner des accords avec un minimum de déplacement de main (voice leading) : un outil très concret, propre au clavier où toutes les notes sont visibles et jouables ensemble.`,
+            diagram: { type:'keyboard', dots: [ { note:4, label:'3' }, { note:7, label:'5' }, { note:12, root:true, label:'1' } ] },
+            tab: null, bpm: null,
+            success: `Joue Do majeur dans ses 3 renversements à la suite (Do‑Mi‑Sol, Mi‑Sol‑Do, Sol‑Do‑Mi) en gardant toujours les 3 mêmes notes.`,
+            cards: [
+              { front:`État fondamental`, back:`La fondamentale est la note la plus grave` },
+              { front:`1er renversement`, back:`La tierce est la note la plus grave` },
+              { front:`2e renversement`, back:`La quinte est la note la plus grave` },
+              { front:`À quoi servent les renversements au piano ?`, back:`Enchaîner des accords avec un minimum de mouvement de main (voice leading)` },
+            ],
+            pitfall: `Croire qu'un renversement change les notes de l'accord : ce sont toujours les 3 mêmes notes, seul l'ordre (la plus grave) change.`,
+          },
+        ],
+        fiche: {
+          title: 'Triades et renversements — l\'essentiel',
+          intro: `La brique de base, et l'art de la réorganiser sans la changer.`,
+          sections: [
+            { h:`Construction`, body:`Empiler des tierces à partir de la fondamentale : degrés 1, 3, 5. 4 qualités : majeur, mineur, diminué, augmenté.` },
+            { h:`Les renversements`, body:`Mêmes 3 notes, note la plus grave différente : fondamental (1 en bas), 1er renv. (3 en bas), 2e renv. (5 en bas).` },
+            { h:`Utilité au piano`, body:`Les renversements minimisent le déplacement de main entre deux accords qui s'enchaînent (voice leading).` },
+          ],
+          diagram: { type:'keyboard', dots: [ { note:0, root:true, label:'1' }, { note:4, label:'3' }, { note:7, label:'5' } ] },
+        },
+      },
+
+      /* ---------------- MODULE 5 — ACCORDS DE 7e AU PIANO ---------------- */
+      {
+        id: 'pi_m5', icon: '7️⃣', title: 'Accords de 7e au piano',
+        goal: `Empiler une 4e tierce — et profiter du fait que le piano peut tout jouer d'un coup.`,
+        lessons: [
+          {
+            id: 'pi_m5l1', title: `D'où viennent les accords de 7e`,
+            goal: `Connaître les 5 qualités de 7e et leurs formules.`,
+            theory: `Empile une 4e tierce sur la triade (un degré 7) et tu obtiens un accord de 7e — 4 notes, une couleur plus riche, plus « jazz ». Cinq qualités : Maj7 (1 3 5 7 — doux, rêveur), 7 dit « de dominante » (1 3 5 ♭7 — tension qui veut résoudre), m7 (1 ♭3 5 ♭7 — mineur doux), m7♭5 (1 ♭3 ♭5 ♭7 — instable, le ii d'un ii‑V‑I mineur), dim7 (1 ♭3 ♭5 ♭♭7 — symétrique, très tendu).`,
+            diagram: null, tab: null, bpm: null,
+            success: `Explique à voix haute la différence entre Maj7 et 7 (dominante) — c'est LA confusion n°1 à éviter.`,
+            cards: [
+              { front:`Maj7 (formule)`, back:`1 3 5 7 — doux, rêveur` },
+              { front:`7 « de dominante » (formule)`, back:`1 3 5 ♭7 — tension qui veut résoudre` },
+              { front:`m7 (formule)`, back:`1 ♭3 5 ♭7` },
+              { front:`m7♭5 (« demi-diminué »)`, back:`1 ♭3 ♭5 ♭7 — le ii d'un ii‑V‑I mineur` },
+              { front:`dim7`, back:`1 ♭3 ♭5 ♭♭7 — accord symétrique, très tendu` },
+            ],
+            pitfall: `Confondre « 7 » (dominante, 7e MINEURE) et « maj7 » (7e MAJEURE) — ça change complètement le son de l'accord.`,
+          },
+          {
+            id: 'pi_m5l2', title: 'Cmaj7 en position serrée puis renversé',
+            goal: `Jouer les 4 notes complètes d'un accord de 7e sous une seule main.`,
+            theory: `Contrairement à la guitare, qui doit souvent sacrifier une note (la 5te) faute de doigts disponibles, le piano peut jouer les 4 notes complètes d'un accord de 7e sous une seule main. En position serrée, Cmaj7 s'empile Do‑Mi‑Sol‑Si (1‑3‑5‑7). En pratique jazz, on préfère souvent un renversement qui place la 7e ou la 3ce en haut (plus proche d'une éventuelle mélodie) plutôt que la fondamentale.`,
+            diagram: { type:'keyboard', dots: [ { note:0, root:true, label:'1' }, { note:4, label:'3' }, { note:7, label:'5' }, { note:11, label:'7' } ] },
+            tab: null, bpm: null,
+            success: `Joue Cmaj7 en position serrée (Do Mi Sol Si), puis en 1er renversement (Mi Sol Si Do).`,
+            cards: [
+              { front:`Cmaj7 en position serrée`, back:`Do Mi Sol Si (1‑3‑5‑7 empilés)` },
+              { front:`Différence piano/guitare pour les accords de 7e`, back:`Le piano joue les 4 notes complètes sous une main ; la guitare doit souvent en sacrifier une` },
+            ],
+            pitfall: `Toujours jouer l'accord en position serrée fondamentale : varier les renversements évite un son plat et répétitif.`,
+          },
+        ],
+        fiche: {
+          title: 'Accords de 7e au piano — l\'essentiel',
+          intro: `La couleur qui ouvre la porte du jazz — et un avantage propre au clavier.`,
+          sections: [
+            { h:`D'où ils viennent`, body:`On empile une 4e tierce (degré 7) sur la triade. 5 qualités : Maj7, 7 dominante, m7, m7♭5, dim7.` },
+            { h:`Avantage piano`, body:`Les 4 notes complètes tiennent sous une seule main — pas besoin de sacrifier une note comme à la guitare.` },
+            { h:`Renversements`, body:`Cmaj7 se joue en position serrée ou renversé (7e ou 3ce en haut) pour varier le son.` },
+          ],
+          diagram: { type:'keyboard', dots: [ { note:0, root:true, label:'1' }, { note:4, label:'3' }, { note:7, label:'5' }, { note:11, label:'7' } ] },
+        },
+      },
+
+      /* ---------------- MODULE 6 — EXTENSIONS ET VOICINGS JAZZ ---------------- */
+      {
+        id: 'pi_m6', icon: '✨', title: 'Extensions et voicings jazz',
+        goal: `9e, 11e, 13e — et le voicing « rootless » de la main gauche jazz.`,
+        lessons: [
+          {
+            id: 'pi_m6l1', title: 'Le principe des extensions',
+            goal: `Comprendre que 9e, 11e, 13e sont les degrés 2, 4, 6 déplacés une octave plus haut.`,
+            theory: `Continue à empiler des tierces au-delà de la 7e et tu obtiens les extensions : la 9e (le degré 2, une octave plus haut), la 11e (le degré 4), la 13e (le degré 6). Elles ajoutent de la couleur sans changer la fonction de base de l'accord (un Cmaj9 reste fondamentalement un Cmaj7). En pratique, on choisit rarement toutes les extensions à la fois — une ou deux suffisent à enrichir la couleur sans surcharger.`,
+            diagram: null, tab: null, bpm: null,
+            success: `Explique pourquoi Cmaj9 « est toujours » un Cmaj7 avec une couleur en plus, pas un accord totalement différent.`,
+            cards: [
+              { front:`9e =`, back:`le degré 2, joué une octave plus haut` },
+              { front:`11e =`, back:`le degré 4, joué une octave plus haut` },
+              { front:`13e =`, back:`le degré 6, joué une octave plus haut` },
+              { front:`Les extensions changent-elles la fonction de l'accord ?`, back:`Non — elles ajoutent une couleur, la fonction de base reste` },
+            ],
+            pitfall: `Vouloir empiler toutes les extensions à la fois : 1-2 suffisent en pratique, sinon l'accord devient illisible à l'oreille.`,
+          },
+          {
+            id: 'pi_m6l2', title: 'Le voicing « rootless »',
+            goal: `Jouer un accord de 7e étendu sans la fondamentale, comme en groupe.`,
+            theory: `En jazz piano, la main gauche joue très souvent un voicing SANS la fondamentale (« rootless ») : en groupe, la contrebasse joue déjà la fondamentale, la répéter au piano encombre le son. Voicing rootless classique pour un accord de 7e étendu : 3‑5‑7‑9 (on remplace la fondamentale par la 9e). Pour Cmaj9 sans fondamentale : Mi‑Sol‑Si‑Ré (3‑5‑7‑9).`,
+            diagram: { type:'keyboard', dots: [ { note:4, root:true, label:'3' }, { note:7, label:'5' }, { note:11, label:'7' }, { note:2, label:'9' } ] },
+            tab: null, bpm: null,
+            success: `Joue Mi‑Sol‑Si‑Ré (sans le Do) en pensant « 3‑5‑7‑9 » plutôt que fondamentale‑3‑5‑7‑9 au complet.`,
+            cards: [
+              { front:`Pourquoi la main gauche jazz évite souvent la fondamentale ?`, back:`La basse la joue déjà en groupe ; la répéter encombre le son` },
+              { front:`Voicing rootless classique (7e étendu)`, back:`3‑5‑7‑9 (la 9e remplace la fondamentale)` },
+            ],
+            pitfall: `Utiliser un voicing rootless en solo, sans bassiste : sans fondamentale ailleurs, l'accord perd son ancrage — reste surtout utile en groupe.`,
+          },
+        ],
+        fiche: {
+          title: 'Extensions et voicings jazz — l\'essentiel',
+          intro: `9e, 11e, 13e, et l'art d'alléger la main gauche en groupe.`,
+          sections: [
+            { h:`Les extensions`, body:`9e = degré 2, 11e = degré 4, 13e = degré 6, chacune une octave plus haut. Ajoutent une couleur, changent pas la fonction.` },
+            { h:`Le voicing rootless`, body:`3‑5‑7‑9 sans la fondamentale — la basse s'en charge en groupe, la répéter au piano encombre le son.` },
+          ],
+          diagram: { type:'keyboard', dots: [ { note:4, root:true, label:'3' }, { note:7, label:'5' }, { note:11, label:'7' }, { note:2, label:'9' } ] },
+        },
+      },
+
+      /* ---------------- MODULE 7 — LA MAIN GAUCHE ---------------- */
+      {
+        id: 'pi_m7', icon: '🤚', title: 'La main gauche',
+        goal: `Occuper la main gauche seule, puis superposer les deux mains.`,
+        lessons: [
+          {
+            id: 'pi_m7l1', title: 'L\'alternance basse-accord (stride simplifié)',
+            goal: `Donner un son « accompagné » complet avec la seule main gauche.`,
+            theory: `Le style le plus simple pour occuper la main gauche seule : alterner une note grave isolée (souvent la fondamentale, sur les temps 1 et 3) avec l'accord complet en position plus haute (sur les temps 2 et 4). C'est une version simplifiée du « stride », popularisé par le early jazz piano — elle donne tout de suite un son accompagné complet, et libère la main droite pour la mélodie ou l'improvisation.`,
+            tabLabel: `🎹 Pattern main gauche`, tab: `Temps :   1            2              3            4\nMain G :  Do (grave)   [Do-Mi-Sol]    Sol (grave)  [Do-Mi-Sol]`,
+            bpm: { start: 60, goal: 100 },
+            success: `Joue ce pattern main gauche seule sur Do majeur, en boucle, sans accélérer ni ralentir.`,
+            cards: [
+              { front:`Le style « stride » simplifié alterne quoi ?`, back:`Une note grave isolée (temps 1, 3) et l'accord complet (temps 2, 4)` },
+              { front:`Pourquoi ce style libère la main droite ?`, back:`La main gauche seule donne déjà basse + harmonie ; la main droite se consacre à la mélodie/impro` },
+            ],
+            pitfall: `Jouer la basse et l'accord au même volume que la main droite : la main gauche doit rester un fond stable, pas rivaliser avec la mélodie.`,
+          },
+          {
+            id: 'pi_m7l2', title: 'Superposer les deux mains',
+            goal: `Ajouter une mélodie simple à la main droite sur le pattern déjà automatisé.`,
+            theory: `Une fois le pattern main gauche automatisé (jouable sans y penser), superpose une mélodie simple à la main droite (par exemple la gamme de Do). Le vrai défi technique propre au piano, par rapport à un instrument à une seule ligne mélodique : chaque main doit devenir indépendante de l'autre. Commence très lentement, quitte à jouer la main gauche seule dix fois avant d'ajouter la main droite.`,
+            tab: null, bpm: null,
+            success: `Joue le pattern main gauche + une mélodie simple main droite (Do‑Ré‑Mi‑Fa‑Sol) simultanément, lentement, sans que les deux mains se désynchronisent.`,
+            cards: [
+              { front:`Le vrai défi technique propre au piano`, back:`L'indépendance des deux mains` },
+              { front:`Méthode pour y arriver`, back:`Automatiser une main seule d'abord, avant de superposer l'autre` },
+            ],
+            pitfall: `Vouloir jouer les deux mains ensemble dès le début, à tempo normal : automatise CHAQUE main séparément d'abord.`,
+          },
+        ],
+        fiche: {
+          title: 'La main gauche — l\'essentiel',
+          intro: `Occuper la main gauche seule d'abord, superposer ensuite.`,
+          sections: [
+            { h:`Le stride simplifié`, body:`Alterner note grave (temps 1,3) et accord complet (temps 2,4) — un son accompagné complet à une seule main.` },
+            { h:`L'indépendance des mains`, body:`Le vrai défi du piano. Automatise chaque main séparément avant de les superposer.` },
+          ], diagram: null,
+        },
+      },
+
+      /* ---------------- MODULE 8 — IMPROVISATION AU PIANO ---------------- */
+      {
+        id: 'pi_m8', icon: '🏆', title: 'Improvisation au piano',
+        goal: `Une main tient, l'autre improvise — la synthèse de tout le cours.`,
+        lessons: [
+          {
+            id: 'pi_m8l1', title: 'Une main comp, l\'autre improvise',
+            goal: `Improviser à la main droite sur un accord tenu à la main gauche.`,
+            theory: `Reprends le principe déjà vu en main gauche (module 7) : pendant que la main gauche tient un accord ou un pattern basse‑accord stable, la main droite improvise avec les outils déjà appris — la pentatonique/blues (module 2) ou le mode qui correspond à l'accord (module 3). Par exemple sur un Do majeur tenu à la main gauche, improvise à la main droite avec la pentatonique majeure de Do ou le mode Ionien.`,
+            diagram: null, tab: null, bpm: null,
+            success: `Sur un Do majeur tenu à la main gauche (accord ou stride simplifié), improvise 30 secondes à la main droite avec la pentatonique majeure de Do.`,
+            cards: [
+              { front:`Que fait la main gauche pendant l'improvisation ?`, back:`Elle tient l'accord ou le pattern stable (comping)` },
+              { front:`Quels outils utiliser à la main droite pour improviser ?`, back:`La pentatonique/blues (module 2) ou le mode correspondant à l'accord (module 3)` },
+            ],
+            pitfall: `Vouloir improviser des deux mains en même temps dès le début : stabilise d'abord la main gauche, elle doit devenir presque automatique avant d'improviser dessus.`,
+          },
+          {
+            id: 'pi_m8l2', title: 'Le blues piano — application concrète',
+            goal: `Combiner main gauche stable et gamme blues main droite sur une grille complète.`,
+            theory: `Le blues piano classique combine tout ce qui précède : main gauche en pattern basse‑accord (le stride simplifié du module 7) sur la grille de blues (I‑IV‑V), main droite en gamme blues (module 2) avec la blue note en passage. Simplification qui marche très bien en débutant/intermédiaire : garder la MÊME gamme blues à la main droite tout du long, même quand l'accord change à la main gauche (I puis IV puis V) — contrairement à la guitare, où l'on module parfois la gamme par accord.`,
+            diagram: null, tab: null, bpm: null,
+            success: `Joue 12 mesures de blues en Do (grille I‑IV‑V simplifiée) à la main gauche, en improvisant avec la gamme blues de Do à la main droite tout du long.`,
+            cards: [
+              { front:`Grille de blues simplifiée`, back:`I‑IV‑V (Do‑Fa‑Sol en Do)` },
+              { front:`Quelle gamme main droite sur toute la grille ?`, back:`La même gamme blues du ton principal, du début à la fin` },
+            ],
+            pitfall: `Vouloir changer de gamme à chaque accord comme à la guitare : au piano débutant/intermédiaire, garder la même gamme blues du ton principal sur toute la grille fonctionne déjà très bien.`,
+          },
+        ],
+        fiche: {
+          title: 'Improvisation au piano — l\'essentiel',
+          intro: `La synthèse de tout le cours : une main tient, l'autre improvise.`,
+          sections: [
+            { h:`Le principe`, body:`Main gauche stable (accord ou stride) + main droite qui improvise avec pentatonique/blues ou le mode adapté.` },
+            { h:`Le blues piano`, body:`Grille I‑IV‑V à la main gauche, même gamme blues à la main droite du début à la fin.` },
+          ], diagram: null,
+        },
+      },
+
     ],
   },
 
