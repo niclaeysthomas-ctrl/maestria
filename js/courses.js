@@ -700,6 +700,74 @@ const COURSES = {
         },
       },
 
+      /* ---------------- MODULE 2 — PENTATONIQUE & BLUES AU PIANO ---------------- */
+      {
+        id: 'pi_m2', icon: '🎶', title: 'Pentatonique & blues au piano',
+        goal: `La gamme à 5 notes qui tombe naturellement sous les 5 doigts.`,
+        lessons: [
+          {
+            id: 'pi_m2l1', title: 'La pentatonique mineure (Do)',
+            goal: `Jouer la pentatonique mineure de Do avec un doigté naturel, sans passage de pouce.`,
+            theory: `La pentatonique mineure ne garde que 5 notes de la gamme mineure : fondamentale, tierce mineure, quarte, quinte, septième mineure (1 ♭3 4 5 ♭7). En Do : Do‑Mib‑Fa‑Sol‑Sib. Particularité propre au piano : comme il n'y a exactement que 5 notes, elles tombent une par une sous tes 5 doigts (1‑2‑3‑4‑5) sur une octave — aucun passage de pouce nécessaire, contrairement à la gamme majeure à 7 notes.`,
+            diagram: { type:'keyboard', dots: [
+              { note:0, root:true, label:'1' }, { note:3, label:'2' }, { note:5, label:'3' }, { note:7, label:'4' }, { note:10, label:'5' },
+            ] },
+            tab: null, bpm: { start: 60, goal: 110 },
+            success: `Joue Do‑Mib‑Fa‑Sol‑Sib montée puis descente, doigté 1‑2‑3‑4‑5, sans aucun passage de pouce, à 90 BPM sans faute.`,
+            cards: [
+              { front:`Formule de la pentatonique mineure`, back:`1 ♭3 4 5 ♭7 (5 notes)` },
+              { front:`Do pentatonique mineure = quelles notes ?`, back:`Do Mib Fa Sol Sib` },
+              { front:`Pourquoi elle ne demande aucun passage de pouce ?`, back:`5 notes exactement = 5 doigts, une correspondance parfaite` },
+            ],
+            pitfall: `Vouloir appliquer le doigté de la gamme majeure (avec passage de pouce) par réflexe : la pentatonique n'en a pas besoin.`,
+          },
+          {
+            id: 'pi_m2l2', title: 'La pentatonique majeure & la relative',
+            goal: `Reconnaître que les mêmes touches, recentrées sur une autre tonique, changent totalement de couleur.`,
+            theory: `Mêmes touches exactement, mais recentre ton oreille sur Mib au lieu de Do : tu entends la pentatonique MAJEURE (formule 1 2 3 5 6), la relative majeure de Do mineur. En pratique : Do pentatonique mineure et Mib pentatonique majeure partagent exactement les 5 mêmes touches (Do Mib Fa Sol Sib) — seule la note qui « sonne comme la maison » change.`,
+            diagram: { type:'keyboard', dots: [
+              { note:0, label:'5' }, { note:3, root:true, label:'1' }, { note:5, label:'2' }, { note:7, label:'3' }, { note:10, label:'4' },
+            ] },
+            tab: null, bpm: null,
+            success: `Joue les mêmes 5 touches en faisant résoudre la mélodie sur Mib au lieu de Do — écoute la couleur passer de mineure à majeure.`,
+            cards: [
+              { front:`Formule de la pentatonique majeure`, back:`1 2 3 5 6 (5 notes)` },
+              { front:`Relative majeure de Do mineur`, back:`Mib majeur (+3 demi-tons)` },
+              { front:`Do pentatonique mineure et Mib pentatonique majeure partagent…`, back:`exactement les mêmes touches — seule la tonique change` },
+            ],
+            pitfall: `Penser que la penta majeure est une position différente à apprendre : c'est exactement le même dessin de touches.`,
+          },
+          {
+            id: 'pi_m2l3', title: 'La blue note & la gamme blues',
+            goal: `Ajouter la note de tension qui donne sa couleur au blues, jouable en passage rapide.`,
+            theory: `Ajoute une seule touche à la pentatonique mineure de Do — le Solb, quinte diminuée (♭5), la « blue note » — et tu obtiens la gamme blues (1 ♭3 4 ♭5 5 ♭7) : Do‑Mib‑Fa‑Solb‑Sol‑Sib. C'est une note de tension : au piano, elle se joue en passage rapide (souvent en grace note ou en glissé entre Fa et Sol) et ne se tient jamais longtemps, sous peine de sonner « fausse » plutôt que tendue.`,
+            diagram: { type:'keyboard', dots: [
+              { note:0, root:true, label:'1' }, { note:3, label:'2' }, { note:5, label:'3' }, { note:6, label:'♭5' }, { note:7, label:'4' }, { note:10, label:'5' },
+            ] },
+            tab: null, bpm: { start: 55, goal: 95 },
+            success: `Joue un petit motif de 4-5 notes incluant le Solb (♭5) en résolvant vers le Sol juste — jamais tenu.`,
+            cards: [
+              { front:`Formule de la gamme blues`, back:`1 ♭3 4 ♭5 5 ♭7` },
+              { front:`La « blue note » en Do blues =`, back:`Solb, la quinte diminuée, entre le Fa et le Sol` },
+              { front:`Où résout généralement la blue note ?`, back:`Vers la quarte ou la quinte juste — jamais tenue` },
+            ],
+            pitfall: `Laisser sonner la blue note comme une note stable : elle doit rester une note de passage, en tension, vite résolue.`,
+          },
+        ],
+        fiche: {
+          title: 'Pentatonique & blues au piano — l\'essentiel',
+          intro: `La gamme à 5 notes qui tombe naturellement sous les doigts — le point de départ de ton impro.`,
+          sections: [
+            { h:`Pentatonique mineure`, body:`Formule 1 ♭3 4 5 ♭7. En Do : Do Mib Fa Sol Sib. 5 notes = 5 doigts, aucun passage de pouce.` },
+            { h:`Pentatonique majeure & relative`, body:`Mêmes touches que la relative mineure (Mib majeur ↔ Do mineur) — seule la tonique change.` },
+            { h:`La blue note`, body:`♭5 (Solb) ajoutée à la penta mineure = gamme blues. Note de tension, en passage rapide, jamais tenue.` },
+          ],
+          diagram: { type:'keyboard', dots: [
+            { note:0, root:true, label:'1' }, { note:3, label:'2' }, { note:5, label:'3' }, { note:7, label:'4' }, { note:10, label:'5' },
+          ] },
+        },
+      },
+
     ],
   },
 
@@ -895,6 +963,341 @@ const COURSES = {
           ], diagram: null,
         },
       },
+    ],
+  },
+
+  /* ================= BOXE — Le Codex du Ring ================= */
+  boxe: {
+    id: 'boxe', disciplineId: 'boxe',
+    title: 'Le Codex du Ring',
+    subtitle: `Des coups isolés à la stratégie de combat`,
+    modules: [
+
+      /* ---------------- MODULE 0 — FONDAMENTAUX TECHNIQUES ---------------- */
+      {
+        id: 'bx_m0', icon: '🧭', title: 'Fondamentaux techniques',
+        goal: `Consolider la garde, le jab et le direct avant d'aller plus loin.`,
+        lessons: [
+          {
+            id: 'bx_m0l1', title: 'La garde et le jab (1)',
+            goal: `Tenir une garde solide et lancer un jab qui ne t'expose pas.`,
+            theory: `La garde de base (droitier, orthodoxe) : pied gauche devant, pied droit derrière, pieds à largeur d'épaules, genoux légèrement fléchis, menton rentré derrière l'épaule avant, mains hautes près du visage, coudes serrés près des côtes. Le jab (coup n°1) est un direct du bras avant : il part et revient sur la trajectoire la plus courte, le poing tourne légèrement à l'impact (paume vers le bas). C'est le coup le plus utilisé en boxe — il mesure la distance et prépare les combinaisons.`,
+            tabLabel: `🥊 Notation`, tab: `1 = jab (bras avant)`, bpm: null,
+            success: `Filme-toi de profil : à l'impact du jab, ton menton reste rentré et ta main arrière reste collée à la joue, jamais basse.`,
+            cards: [
+              { front:`Garde orthodoxe (droitier) : quel pied devant ?`, back:`Le pied gauche` },
+              { front:`Le jab, c'est le coup n°`, back:`1 — bras avant` },
+              { front:`Rôle principal du jab`, back:`Mesurer la distance et préparer les combinaisons` },
+            ],
+            pitfall: `Laisser tomber la main arrière en jabbant : c'est LA faute qui expose au direct ou au crochet adverse pendant que ton bras est tendu.`,
+          },
+          {
+            id: 'bx_m0l2', title: 'Le direct (2) et la rotation de hanche',
+            goal: `Comprendre d'où vient réellement la puissance du direct.`,
+            theory: `Le direct (coup n°2, bras arrière) tire sa puissance de la rotation du bassin et du pivot du pied arrière, pas du bras seul. Chaîne cinétique : le talon arrière se lève et pivote → la hanche tourne → l'épaule suit → le bras se tend en dernier. Un direct « du bras seul » est faible et déséquilibre celui qui le lance.`,
+            tabLabel: `🥊 Notation`, tab: `2 = direct (bras arrière)`, bpm: null,
+            success: `Lance 10 directs au ralenti en vérifiant que le talon arrière se lève et pivote AVANT que le poing ne parte.`,
+            cards: [
+              { front:`D'où vient la puissance du direct ?`, back:`De la rotation hanche + pivot du pied arrière, pas du bras seul` },
+              { front:`Ordre de la chaîne cinétique du direct`, back:`Pied → hanche → épaule → bras` },
+            ],
+            pitfall: `Pivoter le pied APRÈS avoir frappé plutôt qu'avant : la puissance part alors du bras seul et le coup perd sa force.`,
+          },
+        ],
+        fiche: {
+          title: `Fondamentaux techniques — l'essentiel`,
+          intro: `La garde, le jab et le direct : la base sur laquelle tout le reste se construit.`,
+          sections: [
+            { h:`La garde`, body:`Pied avant opposé à la main forte, genoux fléchis, menton rentré, mains hautes, coudes serrés.` },
+            { h:`Le jab (1)`, body:`Coup du bras avant, mesure la distance, revient immédiatement — la garde arrière ne bouge jamais.` },
+            { h:`Le direct (2)`, body:`Puissance = pivot du pied arrière → hanche → épaule → bras, dans cet ordre.` },
+          ], diagram: null,
+        },
+      },
+
+      /* ---------------- MODULE 1 — CROCHETS ET UPPERCUTS ---------------- */
+      {
+        id: 'bx_m1', icon: '🌀', title: 'Crochets et uppercuts',
+        goal: `Ajouter les coups courbes à ton arsenal.`,
+        lessons: [
+          {
+            id: 'bx_m1l1', title: 'Le crochet (3/4)',
+            goal: `Placer un crochet qui garde sa puissance sans s'ouvrir en ligne droite.`,
+            theory: `Le crochet est un coup courbe, coude plié à environ 90°, qui arrive sur le côté plutôt que de face. Sa puissance vient de la rotation du corps (hanche + épaule + pivot du pied), pas du bras qui « tire » un arc de cercle. Le crochet au corps vise les côtes, le crochet à la tête vise la mâchoire ou la tempe.`,
+            tabLabel: `🥊 Notation`, tab: `3 = crochet avant   4 = crochet arrière`, bpm: null,
+            success: `Vérifie que ton coude reste à environ 90° tout au long du mouvement — s'il s'ouvre en ligne droite, ce n'est plus un crochet mais un direct déguisé.`,
+            cards: [
+              { front:`Angle du coude sur un crochet`, back:`Environ 90°, maintenu tout au long du mouvement` },
+              { front:`D'où vient la puissance du crochet ?`, back:`Rotation du corps (hanche + épaule + pivot du pied), pas le bras seul` },
+            ],
+            pitfall: `« Tirer » le crochet en grand arc de cercle avec le bras : perte de puissance et garde ouverte plus longtemps que nécessaire.`,
+          },
+          {
+            id: 'bx_m1l2', title: `L'uppercut (5/6)`,
+            goal: `Comprendre la trajectoire et la distance d'utilisation de l'uppercut.`,
+            theory: `L'uppercut part du bas vers le haut : les jambes se fléchissent légèrement pour « charger », puis leur extension combinée à la rotation de hanche pousse le poing vers le haut, paume vers soi à l'impact. Il est surtout efficace à courte distance, pour percer une garde haute ou toucher le corps.`,
+            tabLabel: `🥊 Notation`, tab: `5 = uppercut avant   6 = uppercut arrière`, bpm: null,
+            success: `Garde les jambes immobiles sur quelques répétitions : la puissance doit chuter nettement, preuve que le mouvement vient normalement des jambes.`,
+            cards: [
+              { front:`Trajectoire de l'uppercut`, back:`Du bas vers le haut, chargé par la flexion puis l'extension des jambes` },
+              { front:`À quelle distance l'uppercut est-il le plus efficace ?`, back:`Courte distance (percer une garde haute, toucher le corps)` },
+            ],
+            pitfall: `Lancer l'uppercut de trop loin : sans la distance courte, le coup perd son angle et devient facilement lisible et évitable.`,
+          },
+        ],
+        fiche: {
+          title: `Crochets et uppercuts — l'essentiel`,
+          intro: `Les coups courbes qui complètent le jab et le direct.`,
+          sections: [
+            { h:`Le crochet (3/4)`, body:`Coude à 90°, puissance venue de la rotation du corps, jamais d'un bras qui tire un arc.` },
+            { h:`L'uppercut (5/6)`, body:`Trajectoire bas→haut, chargée par les jambes ; efficace surtout à courte distance.` },
+          ], diagram: null,
+        },
+      },
+
+      /* ---------------- MODULE 2 — COMBINAISONS INTERMÉDIAIRES ---------------- */
+      {
+        id: 'bx_m2', icon: '🔗', title: 'Combinaisons intermédiaires',
+        goal: `Enchaîner les coups avec fluidité, sans temps mort.`,
+        lessons: [
+          {
+            id: 'bx_m2l1', title: '1-2-3 et 1-1-2',
+            goal: `Enchaîner deux combinaisons classiques sans laisser tomber la garde.`,
+            theory: `Une combinaison enchaîne des coups dans un ordre qui exploite les ouvertures créées par le coup précédent. 1-2-3 (jab-direct-crochet) : le jab et le direct poussent l'adversaire à se couvrir la tête, le crochet arrive alors sur le côté, souvent moins gardé. 1-1-2 (jab-jab-direct) : le double jab casse le rythme attendu — l'adversaire anticipe souvent une combinaison après un seul jab.`,
+            tabLabel: `🥊 Combos`, tab: `1 - 2 - 3\n1 - 1 - 2`, bpm: {start:60, goal:100},
+            success: `Enchaîne 1-2-3 au métronome, 20 répétitions, sans jamais laisser retomber la garde entre les coups.`,
+            cards: [
+              { front:`Pourquoi le crochet touche souvent dans 1-2-3 ?`, back:`Le jab et le direct forcent la garde à se couvrir la tête, ouvrant le côté` },
+              { front:`Pourquoi 1-1-2 surprend l'adversaire ?`, back:`Le double jab casse le rythme attendu d'une combinaison classique` },
+            ],
+            pitfall: `Marquer une pause entre chaque coup de la combinaison : les coups doivent s'enchaîner fluides, sans temps mort qui laisse le temps de réagir.`,
+          },
+          {
+            id: 'bx_m2l2', title: 'Le retour en garde (1-2-3-2)',
+            goal: `Ajouter un 2e coup arrière en fin de combo, et retourner en garde instantanément.`,
+            theory: `Ajouter un direct en fin de combo (1-2-3-2) revient sur la ligne de l'adversaire juste après le crochet latéral — souvent la contre-attaque la plus payante, car l'adversaire, focalisé sur le crochet qui vient de partir, ne s'attend pas à un direct immédiat. Le retour en garde après le dernier coup est aussi important que la combo elle-même : c'est le moment où tu es le plus vulnérable.`,
+            tabLabel: `🥊 Combo`, tab: `1 - 2 - 3 - 2`, bpm: {start:60, goal:110},
+            success: `Après le dernier coup de la combo, chronomètre-toi : ta garde doit être remontée en moins d'une seconde.`,
+            cards: [
+              { front:`Pourquoi ajouter un 2e direct en fin de combo ?`, back:`L'adversaire, focalisé sur le crochet qui vient de partir, ne l'anticipe pas` },
+              { front:`Le moment le plus vulnérable d'une combo`, back:`Juste après le dernier coup, avant le retour en garde` },
+            ],
+            pitfall: `Considérer la combo « terminée » après le dernier coup : le retour en garde EST une partie de la combo, pas un à-côté.`,
+          },
+        ],
+        fiche: {
+          title: `Combinaisons intermédiaires — l'essentiel`,
+          intro: `Enchaîner sans temps mort, et toujours revenir en garde.`,
+          sections: [
+            { h:`1-2-3 / 1-1-2`, body:`Le jab/direct ouvrent la garde pour le crochet ; le double jab casse le rythme attendu.` },
+            { h:`1-2-3-2`, body:`Revenir sur la ligne juste après le crochet surprend souvent le plus.` },
+            { h:`Le retour en garde`, body:`Fait partie intégrante de la combo — pas un à-côté après le dernier coup.` },
+          ], diagram: null,
+        },
+      },
+
+      /* ---------------- MODULE 3 — DÉFENSE ACTIVE ET CONTRE-ATTAQUE ---------------- */
+      {
+        id: 'bx_m3', icon: '🛡️', title: 'Défense active et contre-attaque',
+        goal: `Passer d'une défense passive à une défense qui prépare la riposte.`,
+        lessons: [
+          {
+            id: 'bx_m3l1', title: 'Esquive et riposte immédiate (slip)',
+            goal: `Esquiver latéralement sans reculer, et contre-attaquer dans le même mouvement.`,
+            theory: `L'esquive latérale (slip) déplace légèrement la tête sur le côté pour laisser passer un direct adverse, sans reculer — ce qui te sortirait de portée pour contre-attaquer. Intérêt majeur : une fois le coup adverse esquivé, tu es souvent déjà en position idéale pour placer un crochet ou un direct immédiat, car l'adversaire est en léger déséquilibre après son propre coup manqué.`,
+            tab: null, bpm: null,
+            success: `Esquive latéralement de quelques centimètres seulement (jab imaginé ou lancé par un partenaire), puis place immédiatement un crochet — en un seul mouvement fluide, pas 2 temps séparés.`,
+            cards: [
+              { front:`Différence entre esquiver et reculer`, back:`Esquiver garde la distance de contre-attaque ; reculer te sort de portée` },
+              { front:`Pourquoi contre-attaquer juste après une esquive est efficace ?`, back:`L'adversaire est en léger déséquilibre après son propre coup manqué` },
+            ],
+            pitfall: `Esquiver en reculant plutôt qu'en bougeant la tête sur le côté : tu perds la distance de contre-attaque et dois retraverser l'espace pour répondre.`,
+          },
+          {
+            id: 'bx_m3l2', title: 'Le blocage et le contre au corps',
+            goal: `Savoir quand bloquer plutôt qu'esquiver, et exploiter l'ouverture qui suit.`,
+            theory: `Bloquer avec les avant-bras/coudes (garde haute serrée) coûte moins d'énergie que d'esquiver systématiquement, mais absorbe l'impact plutôt que de l'éviter. Un bon défenseur alterne : bloque les coups francs et directs, esquive plutôt les crochets (plus difficiles à bloquer proprement sans se faire tourner la garde). Après un blocage réussi au corps, l'adversaire est souvent penché en avant — une ouverture pour un uppercut.`,
+            tab: null, bpm: null,
+            success: `Sur une série de coups imaginée, distingue à voix haute lesquels tu bloquerais et lesquels tu esquiverais, en justifiant chaque choix.`,
+            cards: [
+              { front:`Quand bloquer plutôt qu'esquiver ?`, back:`Sur les coups francs/directs — les crochets se bloquent mal sans tourner la garde` },
+              { front:`Ouverture typique après un blocage au corps`, back:`L'adversaire penché en avant → uppercut` },
+            ],
+            pitfall: `Bloquer systématiquement tous les coups : l'accumulation d'impacts, même bloqués, fatigue les bras et use la résistance sur la durée d'un combat.`,
+          },
+        ],
+        fiche: {
+          title: `Défense active et contre-attaque — l'essentiel`,
+          intro: `Défendre pour préparer la riposte, pas juste pour subir moins.`,
+          sections: [
+            { h:`Le slip`, body:`Esquive latérale sans reculer → position idéale pour contre-attaquer immédiatement.` },
+            { h:`Bloquer vs esquiver`, body:`Bloque les coups francs, esquive plutôt les crochets.` },
+            { h:`Après un blocage au corps`, body:`L'adversaire penché en avant ouvre la voie à un uppercut.` },
+          ], diagram: null,
+        },
+      },
+
+      /* ---------------- MODULE 4 — FEINTES ET DÉPLACEMENTS AVANCÉS ---------------- */
+      {
+        id: 'bx_m4', icon: '🌊', title: 'Feintes et déplacements avancés',
+        goal: `Tromper l'adversaire par le mouvement avant même de frapper.`,
+        lessons: [
+          {
+            id: 'bx_m4l1', title: 'La feinte de jab',
+            goal: `Créer une ouverture en amorçant un coup sans l'envoyer.`,
+            theory: `Une feinte amorce le début d'un mouvement de coup (léger mouvement d'épaule ou de bras) sans l'envoyer, dans le seul but de faire réagir l'adversaire — il lève sa garde, recule, ou se fige — ce qui crée une ouverture pour le vrai coup qui suit. La feinte de jab est la plus simple : un léger à-coup de l'épaule avant suffit à faire flancher un adversaire qui anticipe.`,
+            tabLabel: `🥊 Combo`, tab: `feinte(1) - 3`, bpm: null,
+            success: `Fais 10 feintes de jab suivies d'un vrai crochet, en variant le délai entre la feinte et le vrai coup pour ne pas devenir prévisible.`,
+            cards: [
+              { front:`Qu'est-ce qu'une feinte ?`, back:`Amorcer un mouvement de coup sans l'envoyer, pour faire réagir l'adversaire` },
+              { front:`Pourquoi une feinte doit rester imprévisible ?`, back:`Sinon l'adversaire apprend le pattern et arrête d'y réagir` },
+            ],
+            pitfall: `Feinter toujours de la même façon avec le même délai : l'adversaire apprend le pattern et la feinte perd toute son utilité.`,
+          },
+          {
+            id: 'bx_m4l2', title: 'Le pas chassé et la sortie en angle',
+            goal: `Se déplacer sans croiser les jambes, et sortir hors de la ligne de contre-attaque.`,
+            theory: `Le pas chassé (traîner légèrement le pied arrière vers l'avant sans jamais croiser les jambes) permet d'avancer ou de reculer sans perdre l'équilibre ni exposer une jambe croisée, vulnérable à un déséquilibre. Sortir « en angle » après une combo — se déplacer légèrement sur le côté plutôt que tout droit en arrière — évite de rester sur la ligne directe de contre-attaque de l'adversaire.`,
+            tab: null, bpm: null,
+            success: `Enchaîne une combo puis sors immédiatement en angle (pas tout droit en arrière) : vérifie que tu n'es plus aligné avec l'adversaire imaginaire après ta sortie.`,
+            cards: [
+              { front:`Pourquoi ne jamais croiser les jambes en se déplaçant ?`, back:`Ça fait perdre l'équilibre et expose à un déséquilibre immédiat` },
+              { front:`Pourquoi sortir en angle plutôt qu'en ligne droite ?`, back:`Rester sur la ligne directe laisse l'adversaire poursuivre et contre-attaquer facilement` },
+            ],
+            pitfall: `Reculer tout droit après une combo : tu restes exactement sur la ligne où l'adversaire peut te poursuivre et contre-attaquer directement.`,
+          },
+        ],
+        fiche: {
+          title: `Feintes et déplacements avancés — l'essentiel`,
+          intro: `Tromper par le mouvement, se déplacer sans jamais s'exposer.`,
+          sections: [
+            { h:`La feinte`, body:`Amorcer sans envoyer, pour créer une réaction et une ouverture. Doit rester imprévisible.` },
+            { h:`Le pas chassé`, body:`Jamais croiser les jambes en se déplaçant.` },
+            { h:`Sortir en angle`, body:`Après une combo, se déplacer sur le côté plutôt que reculer tout droit.` },
+          ], diagram: null,
+        },
+      },
+
+      /* ---------------- MODULE 5 — COMBINAISONS AVANCÉES ---------------- */
+      {
+        id: 'bx_m5', icon: '⚡', title: 'Combinaisons avancées',
+        goal: `Ajouter changement de niveau et rupture de rythme à tes combos.`,
+        lessons: [
+          {
+            id: 'bx_m5l1', title: 'Changement de niveau (tête/corps)',
+            goal: `Alterner les cibles dans une combo à 5 coups sans casser l'équilibre.`,
+            theory: `Une combinaison avancée alterne les cibles (tête/corps) pour empêcher l'adversaire de « regarder » une seule zone à protéger. Exemple : 1 (tête) - 2 (tête) - 3 au corps (changement de niveau, jambes fléchies) - 2 (tête, jambes qui se redressent) - 3 (tête). Le changement de niveau doit venir des jambes, pas juste du buste qui se penche — se pencher seul casse l'équilibre et expose à un uppercut.`,
+            tabLabel: `🥊 Combo avancée`, tab: `1 - 2 - 3(corps) - 2 - 3`, bpm: {start:50, goal:90},
+            success: `Filme-toi de profil sur cette combo : tes genoux doivent visiblement fléchir sur le coup au corps, pas seulement ton buste qui se penche.`,
+            cards: [
+              { front:`Pourquoi alterner tête et corps dans une combo ?`, back:`Empêche l'adversaire de protéger une seule zone` },
+              { front:`Comment changer de niveau correctement ?`, back:`Avec les jambes (flexion), pas en penchant le buste` },
+            ],
+            pitfall: `Se pencher en avant depuis la taille pour « descendre » au corps : ça casse l'équilibre et expose le menton à un uppercut pendant que tu es penché.`,
+          },
+          {
+            id: 'bx_m5l2', title: 'Rupture de rythme',
+            goal: `Casser le tempo attendu d'une combo pour tromper le timing adverse.`,
+            theory: `Varier le rythme d'une combo (pause délibérée puis accélération soudaine) déstabilise plus qu'une combo toujours au même tempo, car l'adversaire calibre sa défense sur un tempo attendu. Exemple : 1... (pause volontaire d'une fraction de seconde) ...2-3-2 (enchaînement soudain et rapide). Cette rupture est une forme de feinte « temporelle » plutôt que de mouvement.`,
+            tabLabel: `🥊 Combo à rythme brisé`, tab: `1 [pause] 2-3-2 (rapide)`, bpm: null,
+            success: `Fais ressentir clairement la rupture de rythme à un partenaire (ou filme-toi) : la pause doit être ostensible, pas juste « un peu plus lente ».`,
+            cards: [
+              { front:`Qu'est-ce qu'une feinte temporelle ?`, back:`Une rupture de rythme délibérée (pause puis accélération) plutôt qu'un mouvement` },
+              { front:`Pourquoi une combo à tempo constant est plus facile à lire ?`, back:`L'adversaire calibre sa défense sur le tempo qu'il perçoit` },
+            ],
+            pitfall: `Garder un tempo presque constant en pensant « varier le rythme » : la rupture doit être nette pour tromper le timing adverse, pas subtile.`,
+          },
+        ],
+        fiche: {
+          title: `Combinaisons avancées — l'essentiel`,
+          intro: `Changement de niveau et rupture de rythme : deux façons de rendre une combo illisible.`,
+          sections: [
+            { h:`Changement de niveau`, body:`Alterner tête/corps, en fléchissant les jambes — jamais en penchant le buste.` },
+            { h:`Rupture de rythme`, body:`Pause nette puis accélération soudaine, pour casser le tempo attendu.` },
+          ], diagram: null,
+        },
+      },
+
+      /* ---------------- MODULE 6 — STRATÉGIE ET LECTURE DE L'ADVERSAIRE ---------------- */
+      {
+        id: 'bx_m6', icon: '🧠', title: `Stratégie et lecture de l'adversaire`,
+        goal: `Combattre avec la tête, pas seulement les poings.`,
+        lessons: [
+          {
+            id: 'bx_m6l1', title: 'Gestion de la distance (les 3 zones)',
+            goal: `Identifier les 3 zones de combat et choisir celle qui t'avantage.`,
+            theory: `Trois zones de combat : distance longue (hors de portée, sûre mais improductive), distance moyenne (portée du jab/direct, la zone d'échange la plus courante), distance courte/clinch (crochets, uppercuts, corps à corps). Le contrôle du combat consiste souvent à choisir la distance qui t'avantage — grand gabarit → distance longue avec le jab ; puncheur court → chercher la distance courte — et à empêcher l'adversaire d'imposer la sienne.`,
+            tab: null, bpm: null,
+            success: `Identifie, pour ton propre gabarit et style, quelle distance te favoriserait le plus, et explique pourquoi en une phrase.`,
+            cards: [
+              { front:`Les 3 zones de distance en boxe`, back:`Longue, moyenne (jab/direct), courte/clinch (crochets, uppercuts)` },
+              { front:`Comment choisir la distance qui t'avantage ?`, back:`Selon ton gabarit et ton style (allonge → longue, puncheur court → courte)` },
+            ],
+            pitfall: `Subir la distance imposée par l'adversaire au lieu de la disputer activement : la distance se gagne, elle ne se contemple pas.`,
+          },
+          {
+            id: 'bx_m6l2', title: `Lire les habitudes de l'adversaire`,
+            goal: `Observer avant de foncer, pour anticiper plutôt que réagir.`,
+            theory: `Les premiers rounds (ou les premières minutes d'un sparring) servent aussi à observer : quelle main est dominante, quel pied bouge en premier avant une attaque, quels coups reviennent le plus souvent, comment l'adversaire réagit après avoir touché (recule-t-il ou avance-t-il). Ces informations, une fois repérées, permettent d'anticiper plutôt que de simplement réagir.`,
+            tab: null, bpm: null,
+            success: `Après ton prochain sparring ou exercice, note par écrit 2 habitudes précises que tu as repérées chez ton partenaire ou toi-même.`,
+            cards: [
+              { front:`À quoi servent les premiers rounds d'observation ?`, back:`Repérer les habitudes de l'adversaire pour anticiper au lieu de réagir` },
+              { front:`Quel type d'information chercher ?`, back:`Main dominante, coups favoris, réaction après avoir touché` },
+            ],
+            pitfall: `Foncer dès le début sans jamais observer : tu combats « à l'aveugle » pendant tout l'échange, sans exploiter les patterns réels de l'adversaire.`,
+          },
+        ],
+        fiche: {
+          title: `Stratégie et lecture de l'adversaire — l'essentiel`,
+          intro: `La boxe se gagne aussi avec les yeux et la tête, pas seulement les poings.`,
+          sections: [
+            { h:`Les 3 zones`, body:`Longue / moyenne (jab-direct) / courte (crochets, uppercuts, clinch). Choisis celle qui t'avantage.` },
+            { h:`Observer`, body:`Repère main dominante, coups favoris, réaction après avoir touché — pour anticiper.` },
+          ], diagram: null,
+        },
+      },
+
+      /* ---------------- MODULE 7 — CONDITIONNEMENT SPÉCIFIQUE BOXE ---------------- */
+      {
+        id: 'bx_m7', icon: '🔥', title: 'Conditionnement spécifique boxe',
+        goal: `Préparer physiquement pour les efforts réels d'un combat, pas un cardio générique.`,
+        lessons: [
+          {
+            id: 'bx_m7l1', title: `Le circuit explosivité`,
+            goal: `Reproduire à l'entraînement les pics d'intensité réels d'un round.`,
+            theory: `Le cardio générique (course à pied) prépare mal aux efforts caractéristiques de la boxe : des pics d'intensité courts et explosifs (3-8 secondes, une combo rapide) suivis de phases de récupération active (déplacement, jeu de jambes) — pas un effort continu à intensité stable. Un circuit adapté alterne des séries courtes et intenses (shadow boxing à pleine vitesse, 10-15 s) avec de courtes récupérations actives (jeu de jambes léger, 10-15 s), répétées sur la durée d'un round complet.`,
+            tab: null, bpm: null,
+            success: `Chronomètre un round de 3 minutes en alternant 15 s d'intensité maximale et 15 s de récupération active : vérifie que tu tiens l'intensité maximale sur TOUTES les phases, pas seulement les premières.`,
+            cards: [
+              { front:`Différence entre cardio générique et cardio spécifique boxe`, back:`La boxe demande des pics explosifs courts, pas un effort continu stable` },
+              { front:`Structure d'un circuit d'explosivité boxe`, back:`Alternance 10-15 s intensité maximale / 10-15 s récupération active` },
+            ],
+            pitfall: `S'entraîner uniquement en endurance continue (jogging) en pensant que ça suffit : ça ne prépare pas aux pics d'intensité répétés d'un vrai combat.`,
+          },
+          {
+            id: 'bx_m7l2', title: 'La résistance mentale de fin de round',
+            goal: `Maintenir la technique quand la fatigue pousse à la dégrader.`,
+            theory: `Les dernières 30 secondes d'un round sont souvent celles où la garde descend le plus et où les erreurs techniques s'accumulent — la fatigue dégrade la forme avant la force. S'entraîner spécifiquement à maintenir une technique propre en fin de round (pas juste « tenir jusqu'au bout ») construit une résistance qui fait souvent la différence en compétition.`,
+            tab: null, bpm: null,
+            success: `Lors de ton prochain round de 3 minutes, concentre-toi spécifiquement sur le maintien de ta garde haute pendant les 30 dernières secondes — évalue honnêtement si elle était aussi haute qu'au début.`,
+            cards: [
+              { front:`Pourquoi les dernières secondes d'un round sont critiques ?`, back:`La fatigue y dégrade la garde et la technique en premier` },
+              { front:`Que faut-il spécifiquement entraîner en fin de round ?`, back:`La forme (technique propre), pas seulement l'endurance` },
+            ],
+            pitfall: `Se concentrer uniquement sur « tenir » en fin de round sans surveiller sa technique : tenir avec une garde basse ne sert à rien si tu encaisses pendant que tu « tiens ».`,
+          },
+        ],
+        fiche: {
+          title: `Conditionnement spécifique boxe — l'essentiel`,
+          intro: `S'entraîner comme on combat : par pics d'intensité, jusqu'à la dernière seconde du round.`,
+          sections: [
+            { h:`Circuit explosivité`, body:`Alterner 10-15 s d'intensité maximale et 10-15 s de récupération active, sur la durée d'un round.` },
+            { h:`Fin de round`, body:`Entraîner spécifiquement le maintien de la garde et de la technique, pas juste « tenir ».` },
+          ], diagram: null,
+        },
+      },
+
     ],
   },
 };
