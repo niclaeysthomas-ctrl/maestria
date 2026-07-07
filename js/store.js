@@ -86,7 +86,7 @@
       exercises:{ stats:{}, dailyLog:[] }, calibration:{ attempts:[] }, mentalModels:{ journal:[] },
       biasJournal:[], victories:[], essays:[], steelmans:[],
       speaking:{ log:[] }, applications:[], interviewLog:[], debateJournal:[],
-      fallacyJournal:[], predictions:[] };
+      fallacyJournal:[], predictions:[], stage:{ weeklyGoal:5 } };
   }
 
   /* ---------- Persistance ---------- */
@@ -130,6 +130,9 @@
       if (!s.speaking) s.speaking = { log:[] };
       if (!s.speaking.log) s.speaking.log = [];
       if (!s.applications) s.applications = [];
+      s.applications.forEach((a) => { if (!Array.isArray(a.followups)) a.followups = []; }); // rétro-compat pipeline enrichi
+      if (!s.stage) s.stage = { weeklyGoal:5 };
+      if (typeof s.stage.weeklyGoal !== 'number') s.stage.weeklyGoal = 5;
       if (!s.interviewLog) s.interviewLog = [];
       if (!s.debateJournal) s.debateJournal = [];
       if (!s.fallacyJournal) s.fallacyJournal = [];
@@ -628,18 +631,82 @@
   }
   function speakingLogAll() { return ((state.speaking && state.speaking.log) || []).slice().reverse(); }
 
-  /* ---------- Cockpit stage : pipeline de candidatures ---------- */
+  /* ---------- Cockpit stage : pipeline de candidatures ----------
+     Philosophie : on récompense l'ACTION EXPOSÉE (envoyer, relancer, décrocher un
+     entretien), jamais le simple fait d'ajouter un nom à une liste. Les dates
+     (sentDate, interviewDate, followups) servent de garde-fous d'idempotence : une
+     XP donnée une fois n'est jamais re-créditée en changeant le statut d'avant en arrière. */
+  const STAGE_RANK = { contacter:0, envoyee:1, entretien:2, positif:3, negatif:0 };
   function applicationsAll() { return (state.applications || []).slice().reverse(); }
-  function addApplication(company, status) {
+  function addApplication(company, role, status) {
     state.applications = state.applications || [];
-    state.applications.push({ id:'app_'+Date.now()+'_'+Math.random().toString(36).slice(2,6), company, status: status || 'contacter', date: Dates.today() });
+    const a = { id:'app_'+Date.now()+'_'+Math.random().toString(36).slice(2,6),
+      company, role: role || '', status: status || 'contacter', date: Dates.today(),
+      nextAction: '', sentDate: null, interviewDate: null, followups: [] };
+    // Si créée directement au statut « envoyée » ou au-delà, on stampe et crédite l'envoi.
+    let res = null;
+    if (STAGE_RANK[a.status] >= 1) { a.sentDate = Dates.today(); res = addXp('economie', 20, 'stage'); }
+    else save();
+    if (a.status === 'entretien') { a.interviewDate = Dates.today(); res = addXp('economie', 30, 'stage'); }
+    state.applications.push(a);
     save();
+    return res;
   }
   function updateApplicationStatus(id, status) {
     const a = (state.applications || []).find((x) => x.id === id);
-    if (a) { a.status = status; save(); }
+    if (!a) return null;
+    a.status = status;
+    let res = null;
+    // Envoi (1re fois qu'on atteint « envoyée » ou plus) → l'acte exposé, récompensé.
+    if (STAGE_RANK[status] >= 1 && !a.sentDate) { a.sentDate = Dates.today(); res = addXp('economie', 20, 'stage'); }
+    // Entretien décroché (1re fois) → gros palier exposé.
+    if (status === 'entretien' && !a.interviewDate) { a.interviewDate = Dates.today(); res = addXp('economie', 30, 'stage'); }
+    save();
+    return res;
+  }
+  function logFollowup(id) {
+    const a = (state.applications || []).find((x) => x.id === id);
+    if (!a || !a.sentDate) return null; // relancer n'a de sens qu'une candidature déjà envoyée
+    a.followups = a.followups || [];
+    a.followups.push(Dates.today());
+    return addXp('economie', 10, 'stage'); // relancer = un 2e acte exposé, souvent évité
+  }
+  function setApplicationNextAction(id, text) {
+    const a = (state.applications || []).find((x) => x.id === id);
+    if (a) { a.nextAction = (text || '').trim(); save(); }
+  }
+  function setStageWeeklyGoal(n) {
+    state.stage = state.stage || { weeklyGoal:5 };
+    state.stage.weeklyGoal = Math.max(0, Math.min(50, Math.round(Number(n) || 0)));
+    save();
   }
   function removeApplication(id) { state.applications = (state.applications || []).filter((a) => a.id !== id); save(); }
+
+  /* Statistiques du cockpit : rendre l'action réelle VISIBLE (preuves) et l'évitement aussi (relances en attente). */
+  function stageStats() {
+    const apps = state.applications || [];
+    const thisWeek = essayWeekKey(Dates.today());
+    const goal = (state.stage && typeof state.stage.weeklyGoal === 'number') ? state.stage.weeklyGoal : 5;
+    let contacter=0, envoyee=0, entretien=0, positif=0, negatif=0, sentThisWeek=0, pendingFollowup=0;
+    apps.forEach((a) => {
+      if (a.status==='contacter') contacter++;
+      else if (a.status==='envoyee') envoyee++;
+      else if (a.status==='entretien') entretien++;
+      else if (a.status==='positif') positif++;
+      else if (a.status==='negatif') negatif++;
+      if (a.sentDate && essayWeekKey(a.sentDate) === thisWeek) sentThisWeek++;
+      // « relance en attente » = envoyée, sans réponse, dernier contact il y a ≥ 7 jours
+      if (a.status==='envoyee') {
+        const last = (a.followups && a.followups.length) ? a.followups[a.followups.length-1] : a.sentDate;
+        if (last && Dates.diffDays(last, Dates.today()) >= 7) pendingFollowup++;
+      }
+    });
+    const sentTotal = apps.filter((a) => a.sentDate).length;
+    const answered = entretien + positif + negatif; // toute réponse (y compris refus) = un retour du réel
+    return { total:apps.length, contacter, envoyee, entretien, positif, negatif,
+      sentTotal, sentThisWeek, weeklyGoal:goal, pendingFollowup, answered,
+      responseRate: sentTotal ? Math.round((answered / sentTotal) * 100) : 0 };
+  }
 
   /* ---------- Simulateur d'entretien (noté comme les Exercices, sélection pondérée réutilisée) ---------- */
   function recordInterviewAttempt(questionId, category, quality) {
@@ -732,6 +799,7 @@
     addSteelman, steelmansAll, steelmansFor,
     addSpeakingEntry, speakingLogAll,
     applicationsAll, addApplication, updateApplicationStatus, removeApplication,
+    logFollowup, setApplicationNextAction, setStageWeeklyGoal, stageStats,
     recordInterviewAttempt, interviewLogAll, interviewStatsFor,
     debateDone, debateEntriesFor, addDebateEntry,
     fallacyDone, fallacyEntriesFor, addFallacyEntry,

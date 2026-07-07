@@ -1570,29 +1570,82 @@
   /* ======================================================
      COCKPIT STAGE (candidatures + simulateur d'entretien)
      ====================================================== */
-  const APP_STATUS_LABELS = { contacter:'À contacter', envoyee:'Envoyée', entretien:'Entretien obtenu', reponse:'Réponse reçue' };
+  const APP_STATUS_LABELS = { contacter:'À contacter', envoyee:'Candidature envoyée', entretien:'Entretien obtenu', positif:'Réponse positive', negatif:'Refus / sans réponse' };
 
   function viewStageCockpit() {
     nav.hidden = false;
     const apps = S.applicationsAll();
-    const appsHTML = apps.map((a) => `
-      <div class="card app-row">
+    const st = S.stageStats();
+    const goalPct = st.weeklyGoal ? Math.min(100, Math.round(st.sentThisWeek / st.weeklyGoal * 100)) : 0;
+    const goalReached = st.weeklyGoal > 0 && st.sentThisWeek >= st.weeklyGoal;
+
+    // Message d'objectif : pointu quand rien n'est parti cette semaine, factuel sinon.
+    let goalMsg;
+    if (st.weeklyGoal === 0) goalMsg = `Fixe-toi un objectif d'envois : un chiffre + une semaine, c'est ce qui casse le flou.`;
+    else if (st.sentThisWeek === 0) goalMsg = `0 envoi cette semaine. Le simulateur et les listes ne comptent pas — seul l'envoi expose. Vise-en 1 aujourd'hui.`;
+    else if (goalReached) goalMsg = `🎯 Objectif de la semaine atteint. C'est ça, la preuve — pas la préparation.`;
+    else goalMsg = `${st.sentThisWeek}/${st.weeklyGoal} envoyées cette semaine. Il en reste ${st.weeklyGoal - st.sentThisWeek} pour tenir ton objectif.`;
+
+    const objectiveHTML = `
+      <div class="card">
+        <h3 class="lb">🎯 Objectif d'envois — cette semaine</h3>
+        <div class="xpbar"><div class="xpbar-fill" style="width:${goalPct}%;background:${goalReached ? '#10b981' : '#a78bfa'}"></div>
+          <span class="xpbar-label">${st.sentThisWeek} / ${st.weeklyGoal} envoyée${st.weeklyGoal>1?'s':''}</span></div>
+        <p class="muted small">${goalMsg}</p>
+        <label class="muted small">Objectif hebdo : <input type="number" min="0" max="50" value="${st.weeklyGoal}" data-stage-goal style="width:64px"></label>
+      </div>`;
+
+    const statsHTML = `
+      <div class="card stage-stats">
+        <div class="stage-stat"><b>${st.sentTotal}</b><span class="muted small">envoyées</span></div>
+        <div class="stage-stat"><b>${st.entretien + st.positif}</b><span class="muted small">entretiens</span></div>
+        <div class="stage-stat"><b>${st.responseRate}%</b><span class="muted small">taux de retour</span></div>
+        <div class="stage-stat"><b>${st.pendingFollowup}</b><span class="muted small">à relancer</span></div>
+      </div>`;
+
+    const followupCallout = st.pendingFollowup > 0 ? `
+      <div class="card cityhall-note">📮 <b>${st.pendingFollowup} candidature${st.pendingFollowup>1?'s':''} sans réponse depuis ≥ 7 jours.</b> Relancer est un 2e acte exposé, souvent évité — c'est ta prochaine action concrète.</div>` : '';
+
+    const appsHTML = apps.map((a) => {
+      const followups = a.followups || [];
+      const lastContact = followups.length ? followups[followups.length-1] : a.sentDate;
+      const daysSince = lastContact ? Dates.diffDays(lastContact, Dates.today()) : null;
+      const canFollowup = a.status === 'envoyee' && a.sentDate;
+      const stale = canFollowup && daysSince !== null && daysSince >= 7;
+      const meta = [];
+      if (a.sentDate) meta.push(`envoyée le ${esc(Dates.label(a.sentDate))}`);
+      else meta.push(`ajoutée le ${esc(Dates.label(a.date))}`);
+      if (followups.length) meta.push(`${followups.length} relance${followups.length>1?'s':''}`);
+      if (canFollowup && daysSince !== null) meta.push(`${daysSince} j sans réponse`);
+      return `
+      <div class="card app-row ${stale?'app-stale':''}">
         <div class="app-row-head"><b>${esc(a.company)}</b><button class="note-del" data-app-del="${a.id}" aria-label="Supprimer">✕</button></div>
+        ${a.role ? `<span class="muted small">${esc(a.role)}</span>` : ''}
         <select data-app-status="${a.id}">${Object.keys(APP_STATUS_LABELS).map((s) => `<option value="${s}" ${a.status === s ? 'selected' : ''}>${APP_STATUS_LABELS[s]}</option>`).join('')}</select>
-        <span class="muted small">Ajoutée le ${esc(Dates.label(a.date))}</span>
-      </div>`).join('');
+        <input type="text" class="app-next" data-app-next="${a.id}" value="${esc(a.nextAction||'')}" placeholder="Prochaine action concrète (ex : relancer, préparer l'entretien…)">
+        <div class="app-row-foot">
+          <span class="muted small">${meta.join(' · ')}</span>
+          ${canFollowup ? `<button class="btn small ${stale?'primary':''}" data-app-followup="${a.id}">J'ai relancé</button>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+
     app.innerHTML = `
       <header class="dhead"><button class="back" data-go="#/">‹</button>
         <div class="dhead-main"><span class="dicon big">💼</span>
-          <div><h1>Cockpit stage</h1><span class="muted small">${apps.length} candidature(s)</span></div></div></header>
+          <div><h1>Cockpit stage</h1><span class="muted small">${apps.length} candidature(s) · ${st.sentTotal} envoyée(s)</span></div></div></header>
+      ${objectiveHTML}
+      ${statsHTML}
+      ${followupCallout}
       <button class="card cta" data-go="#/stage/interview">🎤 Simulateur d'entretien →</button>
       <h2 class="section">📋 Mes candidatures</h2>
       <form id="app-form" class="stack">
-        <input type="text" name="company" placeholder="Nom de l'entreprise">
+        <input type="text" name="company" placeholder="Entreprise / cabinet">
+        <input type="text" name="role" placeholder="Poste visé (optionnel)">
         <select name="status">${Object.keys(APP_STATUS_LABELS).map((s) => `<option value="${s}">${APP_STATUS_LABELS[s]}</option>`).join('')}</select>
         <button class="btn primary block" type="submit">Ajouter</button>
       </form>
-      ${appsHTML || `<div class="card empty">Aucune candidature enregistrée pour l'instant.</div>`}`;
+      ${appsHTML || `<div class="card empty">Aucune candidature enregistrée pour l'instant.<br><span class="muted small">Le point de départ n'est pas cette liste — c'est le premier envoi.</span></div>`}`;
   }
 
   function viewInterviewHub() {
@@ -2314,6 +2367,10 @@
     const appDel=e.target.closest('[data-app-del]');
     if (appDel) { S.removeApplication(appDel.dataset.appDel); render(); return; }
 
+    /* Cockpit stage : relance (2e acte exposé, récompensé) */
+    const appFollow=e.target.closest('[data-app-followup]');
+    if (appFollow) { const r=S.logFollowup(appFollow.dataset.appFollowup); afterMutation(r); toast(r?'Relance notée · +10 XP 📮':'Relance notée.'); render(); return; }
+
     /* Simulateur d'entretien : révéler, noter, question suivante (pondérée par faiblesse) */
     if (e.target.closest('[data-reveal-interview]')) { interviewRevealed=true; render(); return; }
     const ivQuality=e.target.closest('[data-iv-quality]');
@@ -2570,10 +2627,10 @@
     }
     if (e.target.id==='app-form') {
       const fd=new FormData(e.target);
-      const company=(fd.get('company')||'').trim(), status=fd.get('status');
+      const company=(fd.get('company')||'').trim(), role=(fd.get('role')||'').trim(), status=fd.get('status');
       if (!company) { render(); return; }
-      S.addApplication(company, status);
-      toast('Candidature ajoutée.'); e.target.reset(); render(); return;
+      const r=S.addApplication(company, role, status);
+      afterMutation(r); toast(r ? `Candidature envoyée · +XP 🎯` : 'Candidature ajoutée.'); e.target.reset(); render(); return;
     }
     if (e.target.id==='note-form') {
       const fd=new FormData(e.target);
@@ -2594,7 +2651,15 @@
 
   document.addEventListener('change', (e) => {
     if (e.target.dataset&&e.target.dataset.appStatus) {
-      S.updateApplicationStatus(e.target.dataset.appStatus, e.target.value); toast('Statut mis à jour.'); return;
+      const r=S.updateApplicationStatus(e.target.dataset.appStatus, e.target.value);
+      if (r) { afterMutation(r); toast('Acte exposé enregistré · +XP 🎯'); render(); } else toast('Statut mis à jour.');
+      return;
+    }
+    if (e.target.dataset&&e.target.dataset.appNext!=null&&e.target.hasAttribute('data-app-next')) {
+      S.setApplicationNextAction(e.target.dataset.appNext, e.target.value); toast('Prochaine action notée.'); return;
+    }
+    if (e.target.hasAttribute&&e.target.hasAttribute('data-stage-goal')) {
+      S.setStageWeeklyGoal(e.target.value); render(); return;
     }
     if (e.target.dataset&&e.target.dataset.cefr) {
       const id=location.hash.split('/')[2];
